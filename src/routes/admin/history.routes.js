@@ -10,6 +10,8 @@ const router = Router()
 const serialize = (item) => ({
   id: item._id,
   category: item.category,
+  year: item.year,
+  order: item.order,
   titleEn: item.titleEn,
   titleHi: item.titleHi,
   bodyEn: item.bodyEn,
@@ -27,7 +29,7 @@ router.get('/', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req, res)
   if (category) filter.category = category
   if (status === 'published') filter.published = true
   if (status === 'draft') filter.published = false
-  const items = await HistoryItem.find(filter).sort('-createdAt')
+  const items = await HistoryItem.find(filter).sort({ order: 1, year: 1, createdAt: -1 })
   res.json({ data: items.map(serialize) })
 }))
 
@@ -51,8 +53,11 @@ router.patch('/:id', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req,
   if (!item) return res.status(404).json({ error: 'History not found' })
   const before = serialize(item)
   Object.assign(item, req.body)
-  if (req.body.published && !item.publishedAt) {
+  if (req.body.published === true && !item.publishedAt) {
     item.publishedAt = new Date()
+  }
+  if (req.body.published === false) {
+    item.publishedAt = null
   }
   await item.save()
   await logAudit({

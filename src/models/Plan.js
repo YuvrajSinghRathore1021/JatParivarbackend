@@ -7,6 +7,8 @@ export const Plan = mongoose.model('Plan', new mongoose.Schema({
   titleHi: { type: String },
   descriptionEn: String,
   descriptionHi: String,
+  buttonTextEn: { type: String },
+  buttonTextHi: { type: String },
   price: { type: Number, required: true },
   order: { type: Number, default: 0 },
   active: { type: Boolean, default: true }

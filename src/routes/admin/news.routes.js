@@ -60,8 +60,11 @@ router.patch('/:id', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req,
   if (req.body.titleEn && !req.body.slug) {
     item.slug = slugify(req.body.titleEn)
   }
-  if (req.body.published && !item.publishedAt) {
+  if (req.body.published === true && !item.publishedAt) {
     item.publishedAt = new Date()
+  }
+  if (req.body.published === false) {
+    item.publishedAt = null
   }
   await item.save()
   await logAudit({

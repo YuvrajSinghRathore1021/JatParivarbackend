@@ -8,7 +8,7 @@ export const CONFIG = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: parseInt(process.env.PORT || '8000', 10),
   BASE_URL: process.env.PUBLIC_BASE_URL || `http://localhost:${process.env.PORT || 8000}`,
-  FRONTEND_URLS: list(process.env.CORS_ORIGINS || process.env.CORS_ORIGIN, 'http://localhost:5173,http://localhost:4173,https://jatparivar.org'),
+  FRONTEND_URLS: list(process.env.CORS_ORIGINS || process.env.CORS_ORIGIN, 'http://localhost:5173,http://localhost:4173,https://api.jatparivar.org'),
   API_PREFIX: process.env.API_PREFIX || '/api/v1',
 
   COOKIE_SECURE: (process.env.COOKIE_SECURE || 'false') === 'true',

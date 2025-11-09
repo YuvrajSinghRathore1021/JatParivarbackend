@@ -8,6 +8,7 @@ import { Membership } from '../models/Membership.js'
 import { ah } from '../utils/asyncHandler.js'
 import { signFor } from '../utils/jwt.js'
 import { CONFIG, cookieOpts } from '../config/env.js'
+import { ensurePersonForUser } from '../utils/personSync.js'
 
 const r = Router()
 
@@ -130,6 +131,13 @@ r.post('/register', ah(async (req, res) => {
     status: 'active',
     janAadhaarUrl: janAadhaarUrlValue,
     customFields: normalizedRef ? { referredBy: normalizedRef } : undefined
+  })
+
+  await ensurePersonForUser(user, {
+    name: user.displayName || user.name,
+    photo: user.avatarUrl,
+    place: addr.city,
+    publicNote: user.publicNote
   })
 
   await Membership.create({

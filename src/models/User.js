@@ -1,6 +1,7 @@
 // backend/src/models/User.js
 import mongoose from 'mongoose'
 import bcrypt from 'bcryptjs'
+import { ensurePersonForUser, mapUserRoleToPersonRole, removePersonForUser } from '../utils/personSync.js'
 
 const addressSchema = new mongoose.Schema({
   line1: String,
@@ -59,5 +60,50 @@ const userSchema = new mongoose.Schema({
 userSchema.methods.compare = function (pw) {
   return bcrypt.compare(pw, this.passwordHash)
 }
+
+const syncPersonFromUser = async (doc) => {
+  if (!doc) return
+  const personRole = mapUserRoleToPersonRole(doc.role)
+  if (personRole) {
+    await ensurePersonForUser(doc, {
+      name: doc.displayName || doc.name,
+      photo: doc.avatarUrl,
+      place: doc.address?.city,
+      publicNote: doc.publicNote
+    })
+  } else {
+    await removePersonForUser(doc._id)
+  }
+}
+
+const logSyncError = (err) => {
+  if (err) {
+    console.error('[personSync] Failed to sync person profile', err)
+  }
+}
+
+userSchema.post('save', function (doc) {
+  syncPersonFromUser(doc).catch(logSyncError)
+})
+
+userSchema.post('findOneAndUpdate', function (doc) {
+  const targetId = doc?._id || this.getQuery()?._id
+  if (!targetId) return
+  this.model.findById(targetId).then((updated) => {
+    if (updated) {
+      return syncPersonFromUser(updated)
+    }
+    return null
+  }).catch(logSyncError)
+})
+
+userSchema.post('deleteOne', { document: true, query: false }, function () {
+  removePersonForUser(this._id).catch(logSyncError)
+})
+
+userSchema.post('findOneAndDelete', function (doc) {
+  if (!doc) return
+  removePersonForUser(doc._id).catch(logSyncError)
+})
 
 export const User = mongoose.model('User', userSchema)

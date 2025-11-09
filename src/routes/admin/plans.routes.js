@@ -14,6 +14,8 @@ const serialize = (plan) => ({
   titleHi: plan.titleHi,
   descriptionEn: plan.descriptionEn,
   descriptionHi: plan.descriptionHi,
+  buttonTextEn: plan.buttonTextEn,
+  buttonTextHi: plan.buttonTextHi,
   price: plan.price,
   order: plan.order,
   active: plan.active,
