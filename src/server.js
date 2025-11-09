@@ -26,14 +26,29 @@ const app = express()
 app.set('trust proxy', 1)
 
 app.use(helmet())
+// app.use(cors({
+//   origin: (origin, cb) => {
+//     if (!origin) return cb(null, true)
+//     if (CONFIG.FRONTEND_URLS.includes(origin)) return cb(null, true)
+//     return cb(new Error('Not allowed by CORS'))
+//   },
+//   credentials: true
+// }))
+
+
+// app.use(cors({
+//   origin: '*',
+//   credentials: false
+// }));
 app.use(cors({
-  origin: (origin, cb) => {
-    if (!origin) return cb(null, true)
-    if (CONFIG.FRONTEND_URLS.includes(origin)) return cb(null, true)
-    return cb(new Error('Not allowed by CORS'))
+  origin: (origin, callback) => {
+    return callback(null, true); // allow all origins
   },
   credentials: true
-}))
+}));
+
+
+
 app.use(morgan('dev'))
 app.use(express.json({ limit: '10mb' }))
 app.use(cookieParser())
