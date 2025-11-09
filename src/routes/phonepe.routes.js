@@ -84,6 +84,7 @@ r.get('/callback', ah(async (req,res)=>{
   const pre = await PreSignup.findById(preId)
   const pay = await Payment.findOne({ preSignupId: preId }).sort({createdAt:-1})
   const firstFront = CONFIG.FRONTEND_URLS[0] || 'http://localhost:5173'
+  
   if(pay?.status==='success'){
     const user = await User.findOne({ phone: pre.phone })
     if(user){
