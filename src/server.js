@@ -25,7 +25,13 @@ await connectDB()
 const app = express()
 app.set('trust proxy', 1)
 
-app.use(helmet())
+// app.use(helmet())
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }
+  })
+)
+
 // app.use(cors({
 //   origin: (origin, cb) => {
 //     if (!origin) return cb(null, true)
@@ -36,10 +42,6 @@ app.use(helmet())
 // }))
 
 
-// app.use(cors({
-//   origin: '*',
-//   credentials: false
-// }));
 app.use(cors({
   origin: (origin, callback) => {
     return callback(null, true); // allow all origins
@@ -47,11 +49,20 @@ app.use(cors({
   credentials: true
 }));
 
+// ✅ MUST be above static route
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept')
+  next()
+})
 
+  
 
 app.use(morgan('dev'))
 app.use(express.json({ limit: '10mb' }))
 app.use(cookieParser())
+// app.use('/uploads', express.static(path.resolve('src/uploads')))
 app.use('/uploads', express.static(path.resolve('src/uploads')))
 
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 200 })
