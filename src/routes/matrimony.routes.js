@@ -12,12 +12,12 @@ const r = Router()
 r.get('/profiles', ah(async (req, res) => {
   const { sort = 'recent' } = req.query
   const order =
-    sort === 'age-asc'  ? { age: 1 } :
-    sort === 'age-desc' ? { age: -1 } :
-    { createdAt: -1 }
+    sort === 'age-asc' ? { age: 1 } :
+      sort === 'age-desc' ? { age: -1 } :
+        { createdAt: -1 }
 
   const profiles = await MatrimonyProfile.find({ visible: true })
-    .populate('userId', 'displayName name gender maritalStatus occupation company state district city phone publicNote avatarUrl')
+    .populate('userId', 'displayName name gender maritalStatus occupation company state district city phone publicNote avatarUrl hight')
     .sort(order)
     .limit(100)
     .lean()
@@ -28,6 +28,7 @@ r.get('/profiles', ah(async (req, res) => {
       id: p._id,
       age: p.age,
       gender: p.gender,
+      hight: p.hight,
       maritalStatus: p.maritalStatus,
       education: p.education,
       occupation: p.occupation,
@@ -62,10 +63,10 @@ r.get('/profiles/me', auth, ah(async (req, res) => {
 r.post('/profiles', auth, ah(async (req, res) => {
   const body = (({
     age, gender, maritalStatus, education, occupation,
-    state, district, city, village, gotra, photos, visible,
+    state, district, city, village, gotra, photos, visible, hight
   }) => ({
     age, gender, maritalStatus, education, occupation,
-    state, district, city, village, gotra, photos, visible,
+    state, district, city, village, gotra, photos, visible, hight
   }))(req.body || {})
 
   const up = await MatrimonyProfile.findOneAndUpdate(
