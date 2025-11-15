@@ -17,12 +17,12 @@ export const CONFIG = {
   MONGO_URI: process.env.MONGO_URI,
 
   PHONEPE: {
-    BASE_URL: process.env.PHONEPE_BASE_URL || 'https://api-preprod.phonepe.com/apis/pg-sandbox',
-    MERCHANT_ID: process.env.PHONEPE_MERCHANT_ID || '',
-    SALT_KEY: process.env.PHONEPE_SALT_KEY || '',
+    BASE_URL: process.env.PHONEPE_BASE_URL || 'https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay',
+    MERCHANT_ID: process.env.PHONEPE_MERCHANT_ID || 'M23NICKDCRP5X',
+    SALT_KEY: process.env.PHONEPE_SALT_KEY || 'N2EwNmI0N2ItMGJmMi00Mjg4LTkzYTUtNDdjMWU4OWNlMWI0',
     SALT_INDEX: process.env.PHONEPE_SALT_INDEX || '1',
-    REDIRECT_URL: process.env.PHONEPE_REDIRECT_URL,
-    CALLBACK_URL: process.env.PHONEPE_CALLBACK_URL,
+    REDIRECT_URL: process.env.PHONEPE_REDIRECT_URL || 'https://api.jatparivar.org/api/payments/phonepe/callback',
+    CALLBACK_URL: process.env.PHONEPE_CALLBACK_URL || 'https://api.jatparivar.org/api/payments/phonepe/webhook',
   },
 
   JWT_SECRET: process.env.JWT_SECRET || 'dev-secret',

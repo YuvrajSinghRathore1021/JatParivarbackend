@@ -13,6 +13,7 @@ import pageRoutes from './pages.routes.js'
 import newsRoutes from './news.routes.js'
 import historyRoutes from './history.routes.js'
 import institutionRoutes from './institutions.routes.js'
+import matrimonyRoutes from './matrimonys.routes.js'
 import settingRoutes from './settings.routes.js'
 import auditRoutes from './audit.routes.js'
 import jobRoutes from './jobs.routes.js'
@@ -30,8 +31,9 @@ router.use('/ads', adminAuth, adRoutes)
 router.use('/pages', adminAuth, pageRoutes)
 router.use('/news', adminAuth, newsRoutes)
 router.use('/history', adminAuth, historyRoutes)
-router.use('/jobs', adminAuth, jobRoutes)   
+router.use('/jobs', adminAuth, jobRoutes)
 router.use('/institutions', adminAuth, institutionRoutes)
+router.use('/matrimony', adminAuth, matrimonyRoutes)
 router.use('/settings', adminAuth, settingRoutes)
 router.use('/audit-logs', adminAuth, auditRoutes)
 

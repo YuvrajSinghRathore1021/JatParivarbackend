@@ -23,10 +23,10 @@ const sign = (payloadBase64, path) => {
 const redirectUrl = CONFIG.PHONEPE.REDIRECT_URL || `${CONFIG.BASE_URL}${CONFIG.API_PREFIX}/payments/phonepe/callback`
 const callbackUrl = CONFIG.PHONEPE.CALLBACK_URL || `${CONFIG.BASE_URL}${CONFIG.API_PREFIX}/payments/phonepe/webhook`
 
-r.post('/create', ah(async (req,res)=>{
+r.post('/create', ah(async (req, res) => {
   const { phone, refCode, form, addr, gotra, janAadharUrl, profilePhotoUrl, plan } = req.body
   const pre = await PreSignup.create({ phone, refCode, form, addr, gotra, janAadharUrl, profilePhotoUrl, plan })
-  const amount = plan==='founder' ? 10100000 : plan==='member' ? 5000000 : 210000
+  const amount = plan === 'founder' ? 10100000 : plan === 'member' ? 5000000 : 210000
 
   const merchantTransactionId = nanoid(12)
   const payload = {
@@ -38,62 +38,62 @@ r.post('/create', ah(async (req,res)=>{
     paymentInstrument: { type: "PAY_PAGE" }
   }
   const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString('base64')
-  const xverify = sign(payloadBase64, '/pg/v1/pay')
+  const xverify = sign(payloadBase64)
 
   const { data } = await axios.post(
-    `${process.env.PHONEPE_BASE_URL}/pg/v1/pay`,
+    `${process.env.PHONEPE_BASE_URL}`,
     { request: payloadBase64 },
-    { headers: { 'Content-Type':'application/json', 'X-VERIFY': xverify, 'X-MERCHANT-ID': process.env.PHONEPE_MERCHANT_ID } }
+    { headers: { 'Content-Type': 'application/json', 'X-VERIFY': xverify, 'X-MERCHANT-ID': process.env.PHONEPE_MERCHANT_ID } }
   )
 
   const orderId = data?.data?.merchantTransactionId || merchantTransactionId
-  await Payment.create({ preSignupId: pre._id, orderId, merchantTransactionId, amount, plan, status:'created', raw: data })
+  await Payment.create({ preSignupId: pre._id, orderId, merchantTransactionId, amount, plan, status: 'created', raw: data })
 
   res.json({ redirectUrl: data?.data?.instrumentResponse?.redirectInfo?.url })
 }))
 
-r.post('/webhook', ah(async (req,res)=>{
+r.post('/webhook', ah(async (req, res) => {
   const event = req.body || {}
   const orderId = event?.data?.merchantTransactionId
   const code = event?.code
-  const status = code==='PAYMENT_SUCCESS'?'success':'failed'
+  const status = code === 'PAYMENT_SUCCESS' ? 'success' : 'failed'
 
-  const pay = await Payment.findOneAndUpdate({ merchantTransactionId: orderId }, { $set: { status, raw: event } }, { new:true })
-  if(!pay) return res.json({ ok:true })
+  const pay = await Payment.findOneAndUpdate({ merchantTransactionId: orderId }, { $set: { status, raw: event } }, { new: true })
+  if (!pay) return res.json({ ok: true })
 
-  if(status==='success'){
+  if (status === 'success') {
     const pre = await PreSignup.findById(pay.preSignupId)
-    if(pre && pre.status!=='paid'){
-      pre.status='paid'; await pre.save()
+    if (pre && pre.status !== 'paid') {
+      pre.status = 'paid'; await pre.save()
       const passwordHash = await bcrypt.hash(pre.form.password, 10)
       // Basic referral check
-      const role = pre.plan==='founder'?'founder': pre.plan==='member'?'member':'sadharan'
-      const referralCode = (Math.floor(100000+Math.random()*900000)).toString()
+      const role = pre.plan === 'founder' ? 'founder' : pre.plan === 'member' ? 'member' : 'sadharan'
+      const referralCode = (Math.floor(100000 + Math.random() * 900000)).toString()
       const user = await User.create({
         name: pre.form.name, email: pre.form.email, phone: pre.phone, passwordHash, role, referralCode,
         avatarUrl: pre.profilePhotoUrl, publicNote: ''
       })
-      await Membership.create({ userId: user._id, plan: pre.plan, status:'active', startedAt: new Date() })
+      await Membership.create({ userId: user._id, plan: pre.plan, status: 'active', startedAt: new Date() })
     }
   }
-  res.json({ ok:true })
+  res.json({ ok: true })
 }))
 
-r.get('/callback', ah(async (req,res)=>{
+r.get('/callback', ah(async (req, res) => {
   const { pre: preId } = req.query
   const pre = await PreSignup.findById(preId)
-  const pay = await Payment.findOne({ preSignupId: preId }).sort({createdAt:-1})
+  const pay = await Payment.findOne({ preSignupId: preId }).sort({ createdAt: -1 })
   const firstFront = CONFIG.FRONTEND_URLS[0] || 'http://localhost:5173'
-  
-  if(pay?.status==='success'){
+
+  if (pay?.status === 'success') {
     const user = await User.findOne({ phone: pre.phone })
-    if(user){
+    if (user) {
       const token = signFor(user)
-      res.cookie('token', token, { httpOnly:true, sameSite: CONFIG.COOKIE_SAMESITE, secure: CONFIG.COOKIE_SECURE, path:'/' })
+      res.cookie('token', token, { httpOnly: true, sameSite: CONFIG.COOKIE_SAMESITE, secure: CONFIG.COOKIE_SECURE, path: '/' })
       return res.redirect(`${firstFront}/hi/dashboard`)
     }
   }
-  return res.redirect(`${firstFront}/hi/register?status=${pay?.status||'pending'}`)
+  return res.redirect(`${firstFront}/hi/register?status=${pay?.status || 'pending'}`)
 }))
 
 export default r

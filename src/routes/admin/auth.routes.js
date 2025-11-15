@@ -22,7 +22,7 @@ const serializeAdmin = (admin) => ({
 })
 
 router.post('/login', ah(async (req, res) => {
-  const { phone, password } = req.body
+  const { phone, password, otp } = req.body
   if (!phone || !password) {
     return res.status(400).json({ error: 'Phone and password required' })
   }

@@ -1,11 +1,11 @@
 // backend/src/models/MatrimonyProfile.js
 import mongoose from 'mongoose'
 export const MatrimonyProfile = mongoose.model('MatrimonyProfile', new mongoose.Schema({
-  userId: { type: mongoose.Types.ObjectId, ref: 'User', unique: true },
+  userId: { type: mongoose.Types.ObjectId, ref: 'User', unique: true,sparse: true  },
   visible: { type: Boolean, default: true },
   age: Number,
   gender: String,
-  hight: String,
+  height: String,
   maritalStatus: String,
   education: String,
   occupation: String,

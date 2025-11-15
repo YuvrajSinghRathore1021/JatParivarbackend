@@ -30,18 +30,20 @@ router.get('/:slug', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req,
   const page = await Page.findOne({ slug: req.params.slug })
   if (!page) return res.status(404).json({ error: 'Page not found' })
   const versions = await PageVersion.find({ pageId: page._id }).sort('-createdAt').limit(20)
-  res.json({ page: serializePage(page), versions: versions.map(v => ({
-    id: v._id,
-    version: v.version,
-    titleEn: v.titleEn,
-    titleHi: v.titleHi,
-    contentEn: v.contentEn,
-    contentHi: v.contentHi,
-    summary: v.summary,
-    published: v.published,
-    publishedAt: v.publishedAt,
-    createdAt: v.createdAt
-  })) })
+  res.json({
+    page: serializePage(page), versions: versions.map(v => ({
+      id: v._id,
+      version: v.version,
+      titleEn: v.titleEn,
+      titleHi: v.titleHi,
+      contentEn: v.contentEn,
+      contentHi: v.contentHi,
+      summary: v.summary,
+      published: v.published,
+      publishedAt: v.publishedAt,
+      createdAt: v.createdAt
+    }))
+  })
 }))
 
 router.put('/:slug', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req, res) => {
