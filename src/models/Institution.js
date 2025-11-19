@@ -19,6 +19,13 @@ const imageSchema = new mongoose.Schema({
   altHi: String,
   order: { type: Number, default: 0 }
 }, { _id: false })
+const contactPersonSchema = new mongoose.Schema({
+  name: String,
+  email: String,
+  phone: String,
+  post: String
+});
+
 
 export const Institution = mongoose.model('Institution', new mongoose.Schema({
   userId: { type: mongoose.Types.ObjectId, ref: 'User' },
@@ -36,6 +43,7 @@ export const Institution = mongoose.model('Institution', new mongoose.Schema({
   amenities: [amenitySchema],
   contact: contactSchema,
   images: [imageSchema],
+  contactpersons: [contactPersonSchema],
   published: { type: Boolean, default: false },
   approved: { type: Boolean, default: false }
 }, { timestamps: true }))

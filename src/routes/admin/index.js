@@ -14,6 +14,7 @@ import newsRoutes from './news.routes.js'
 import historyRoutes from './history.routes.js'
 import institutionRoutes from './institutions.routes.js'
 import matrimonyRoutes from './matrimonys.routes.js'
+import gauravRoutes from './gauravs.routes.js'
 import settingRoutes from './settings.routes.js'
 import auditRoutes from './audit.routes.js'
 import jobRoutes from './jobs.routes.js'
@@ -34,6 +35,7 @@ router.use('/history', adminAuth, historyRoutes)
 router.use('/jobs', adminAuth, jobRoutes)
 router.use('/institutions', adminAuth, institutionRoutes)
 router.use('/matrimony', adminAuth, matrimonyRoutes)
+router.use('/gaurav', adminAuth, gauravRoutes)
 router.use('/settings', adminAuth, settingRoutes)
 router.use('/audit-logs', adminAuth, auditRoutes)
 

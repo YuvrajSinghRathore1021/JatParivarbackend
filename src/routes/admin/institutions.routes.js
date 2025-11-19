@@ -21,6 +21,7 @@ const serialize = (doc) => ({
   pin: doc.pin,
   amenities: doc.amenities,
   contact: doc.contact,
+  contactpersons: doc.contactpersons,
   images: doc.images,
   addressEn: doc.addressEn,
   addressHi: doc.addressHi,

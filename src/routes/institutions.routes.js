@@ -7,16 +7,45 @@ import { Institution } from '../models/Institution.js'
 
 const r = Router()
 
+// r.get(
+//   '/',
+//   ah(async (req, res) => {
+//     const { kind ,id} = req.query
+//     const list = await Institution.find({ approved: true, ...(kind ? { kind } : {}) })
+//       .sort('-createdAt')
+//       .limit(200)
+//     res.json(list)
+//   })
+// )
 r.get(
   '/',
   ah(async (req, res) => {
-    const { kind } = req.query
-    const list = await Institution.find({ approved: true, ...(kind ? { kind } : {}) })
+    const { kind, id } = req.query;
+
+    // 👉 Only fetch by ID if it is a valid ObjectId
+    if (id && mongoose.Types.ObjectId.isValid(id)) {
+      const item = await Institution.findById(id);
+
+      if (!item) {
+        return res.status(404).json({ error: "Institution not found" });
+      }
+
+      return res.json(item);
+    }
+
+    // 👉 If id exists but invalid → ignore ID and return list
+    // (example: id=0 or id="")
+    const filter = {
+      approved: true,
+      ...(kind ? { kind } : {})
+    };
+
+    const list = await Institution.find(filter)
       .sort('-createdAt')
-      .limit(200)
-    res.json(list)
+      .limit(200);
+    res.json(list);
   })
-)
+);
 
 r.get(
   '/mine',

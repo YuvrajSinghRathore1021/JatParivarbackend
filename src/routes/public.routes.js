@@ -11,6 +11,7 @@ import { NewsItem } from '../models/NewsItem.js'
 import { HistoryItem } from '../models/HistoryItem.js'
 import { ah } from '../utils/asyncHandler.js'
 import { ensurePersonForUser, pruneDuplicatePersonsForRole } from '../utils/personSync.js'
+import { gauravs } from "../models/GauravPerson.js";
 
 const r = Router()
 
@@ -311,5 +312,36 @@ r.get('/pages/:slug', ah(async (req, res) => {
   }
   res.json(page)
 }))
+
+
+
+
+r.get("/gaurav", (async (req, res) => {
+  const {
+    search = "",
+    timeline,
+    category
+  } = req.query;
+
+  const filter = {};
+
+  if (timeline) filter.timeline = timeline;
+  if (category) filter.category = category;
+
+  if (search) {
+    filter.$or = [
+      { name: new RegExp(search, "i") },
+      { title: new RegExp(search, "i") },
+      { biography: new RegExp(search, "i") }
+    ];
+  }
+
+  const list = await gauravs
+    .find(filter)
+    .sort({ createdAt: -1 })
+    .lean();
+
+  res.json({ data: list });
+}));
 
 export default r
