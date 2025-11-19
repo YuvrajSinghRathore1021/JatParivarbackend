@@ -303,6 +303,16 @@ r.get('/site/home-impact', ah(async (_req, res) => {
   res.json(impact)
 }))
 
+// // CMS pages
+// r.get('/pages/:slug', ah(async (req, res) => {
+//   const { slug } = req.params
+//   const page = await Page.findOne({ slug }).lean()
+//   if (!page || page.status !== 'published') {
+//     return res.status(404).json({ error: 'Not found' })
+//   }
+//   res.json(page)
+// }))
+
 // CMS pages
 r.get('/pages/:slug', ah(async (req, res) => {
   const { slug } = req.params
@@ -316,13 +326,61 @@ r.get('/pages/:slug', ah(async (req, res) => {
 
 
 
-r.get("/gaurav", (async (req, res) => {
+// r.get("/gaurav", (async (req, res) => {
+//   const {
+//     search = "",
+//     timeline,
+//     category,id
+//   } = req.query;
+
+//   const filter = {};
+
+//   if (timeline) filter.timeline = timeline;
+//   if (category) filter.category = category;
+
+//   if (search) {
+//     filter.$or = [
+//       { name: new RegExp(search, "i") },
+//       { title: new RegExp(search, "i") },
+//       { biography: new RegExp(search, "i") }
+//     ];
+//   }
+
+//   const list = await gauravs
+//     .find(filter)
+//     .sort({ createdAt: -1 })
+//     .lean();
+
+//   res.json({ data: list });
+// }));
+
+
+
+
+r.get("/gaurav", async (req, res) => {
   const {
     search = "",
     timeline,
-    category
+    category,
+    id
   } = req.query;
 
+  // ----------------------------------------
+  // 1) If ID exists → return single profile
+  // ----------------------------------------
+  if (id) {
+    const item = await gauravs.findById(id).lean();
+
+    if (!item) {
+      return res.status(404).json({ error: "Profile not found" });
+    }
+
+    return res.json({ data: item });
+  }
+
+  // ----------------------------------------
+  // 2) Otherwise → return list with filters
+  // ----------------------------------------
   const filter = {};
 
   if (timeline) filter.timeline = timeline;
@@ -342,6 +400,6 @@ r.get("/gaurav", (async (req, res) => {
     .lean();
 
   res.json({ data: list });
-}));
+});
 
 export default r
