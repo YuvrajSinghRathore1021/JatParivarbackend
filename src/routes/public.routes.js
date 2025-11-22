@@ -326,13 +326,31 @@ r.get('/pages/:slug', ah(async (req, res) => {
 
 
 
-// r.get("/gaurav", (async (req, res) => {
+
+// r.get("/gaurav", async (req, res) => {
 //   const {
 //     search = "",
 //     timeline,
-//     category,id
+//     category,
+//     id
 //   } = req.query;
 
+//   // ----------------------------------------
+//   // 1) If ID exists → return single profile
+//   // ----------------------------------------
+//   if (id) {
+//     const item = await gauravs.findById(id).lean();
+
+//     if (!item) {
+//       return res.status(404).json({ error: "Profile not found" });
+//     }
+
+//     return res.json({ data: item });
+//   }
+
+//   // ----------------------------------------
+//   // 2) Otherwise → return list with filters
+//   // ----------------------------------------
 //   const filter = {};
 
 //   if (timeline) filter.timeline = timeline;
@@ -352,48 +370,67 @@ r.get('/pages/:slug', ah(async (req, res) => {
 //     .lean();
 
 //   res.json({ data: list });
-// }));
-
+// });
 
 
 
 r.get("/gaurav", async (req, res) => {
-  const {
-    search = "",
-    timeline,
-    category,
-    id
-  } = req.query;
+  const { search = "", timeline, category, id } = req.query;
 
-  // ----------------------------------------
+  // -----------------------------------------------------
   // 1) If ID exists → return single profile
-  // ----------------------------------------
+  // -----------------------------------------------------
   if (id) {
-    const item = await gauravs.findById(id).lean();
+    try {
+      const item = await gauravs.findById(id).lean();
 
-    if (!item) {
-      return res.status(404).json({ error: "Profile not found" });
+      if (!item) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+
+      return res.json({ data: item });
+    } catch (err) {
+      return res.status(400).json({ error: "Invalid ID format" });
     }
-
-    return res.json({ data: item });
   }
 
-  // ----------------------------------------
-  // 2) Otherwise → return list with filters
-  // ----------------------------------------
+  // -----------------------------------------------------
+  // 2) Build Filter for List Results
+  // -----------------------------------------------------
   const filter = {};
 
-  if (timeline) filter.timeline = timeline;
-  if (category) filter.category = category;
+  // Filter by timeline (searching inside nested sections)
+  if (timeline === "PRESENT") {
+    filter["present.timeline"] = "PRESENT";
+  }
 
-  if (search) {
+  if (timeline === "PAST") {
+    filter["past.timeline"] = "PAST";
+  }
+
+  // Filter by category (nested)
+  if (category) {
     filter.$or = [
-      { name: new RegExp(search, "i") },
-      { title: new RegExp(search, "i") },
-      { biography: new RegExp(search, "i") }
+      { "present.category": category },
+      { "past.category": category }
     ];
   }
 
+  // Search across name, title, biography (both sections)
+  if (search) {
+    const regex = new RegExp(search, "i");
+
+    filter.$or = [
+      { name: regex },
+      { title: regex },
+      { "present.biography": regex },
+      { "past.biography": regex }
+    ];
+  }
+
+  // -----------------------------------------------------
+  // 3) Get List
+  // -----------------------------------------------------
   const list = await gauravs
     .find(filter)
     .sort({ createdAt: -1 })
@@ -401,5 +438,6 @@ r.get("/gaurav", async (req, res) => {
 
   res.json({ data: list });
 });
+
 
 export default r
