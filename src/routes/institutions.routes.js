@@ -76,7 +76,9 @@ r.post(
       amenities,
       contact,
       images,
-      contactpersons
+      contactpersons,
+      businessEn,
+      businessHi
     }) => ({
       kind,
       titleEn,
@@ -92,7 +94,8 @@ r.post(
       amenities,
       contact,
       images,
-      contactpersons
+      contactpersons, businessEn,
+      businessHi
     }))(req.body || {})
 
     const doc = await Institution.create({ ...payload, userId: req.user._id, approved: false })
@@ -122,7 +125,8 @@ r.patch(
       amenities,
       contact,
       images,
-      contactpersons
+      contactpersons,businessEn,
+      businessHi
     }) => ({
       titleEn,
       titleHi,
@@ -137,7 +141,8 @@ r.patch(
       amenities,
       contact,
       images,
-      contactpersons
+      contactpersons,businessEn,
+      businessHi
     }))(req.body || {})
 
     const doc = await Institution.findOneAndUpdate(

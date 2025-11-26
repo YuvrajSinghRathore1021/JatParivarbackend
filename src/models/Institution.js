@@ -34,6 +34,8 @@ export const Institution = mongoose.model('Institution', new mongoose.Schema({
   titleHi: { type: String },
   descriptionEn: String,
   descriptionHi: String,
+  businessEn: String,
+  businessHi: String,
   addressEn: String,
   addressHi: String,
   state: String,

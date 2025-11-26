@@ -13,6 +13,8 @@ const serialize = (doc) => ({
   titleHi: doc.titleHi,
   descriptionEn: doc.descriptionEn,
   descriptionHi: doc.descriptionHi,
+  businessEn: doc.businessEn,
+  businessHi: doc.businessHi,
   addressEn: doc.addressEn,
   addressHi: doc.addressHi,
   state: doc.state,

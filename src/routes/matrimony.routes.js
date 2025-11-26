@@ -27,6 +27,7 @@ r.get('/profiles', ah(async (req, res) => {
     return {
       id: p._id,
       age: p.age,
+      name: p.name,
       gender: p.gender,
       height: p.height,
       maritalStatus: p.maritalStatus,
@@ -59,14 +60,28 @@ r.get('/profiles/me', auth, ah(async (req, res) => {
   res.json(profile || null)
 }))
 
+r.get('/:id', auth, ah(async (req, res) => {
+  const { id } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ error: 'Invalid profile id' });
+  }
+  const profile = await MatrimonyProfile.findById(id).lean();
+
+  if (!profile) {
+    return res.status(404).json({ error: 'Profile not found' });
+  }
+
+  res.json(profile);
+}))
+
 // Upsert my profile
 r.post('/profiles', auth, ah(async (req, res) => {
   const body = (({
     age, gender, maritalStatus, education, occupation,
-    state, district, city, village, gotra, photos, visible, height
+    state, district, city, village, gotra, photos, visible, height, name
   }) => ({
     age, gender, maritalStatus, education, occupation,
-    state, district, city, village, gotra, photos, visible, height
+    state, district, city, village, gotra, photos, visible, height, name
   }))(req.body || {})
 
   const up = await MatrimonyProfile.findOneAndUpdate(
@@ -143,6 +158,7 @@ r.get('/interests', auth, ah(async (req, res) => {
       },
       profile: profile ? {
         age: profile.age,
+        name: profile.name,
         gender: profile.gender,
         maritalStatus: profile.maritalStatus,
         education: profile.education,

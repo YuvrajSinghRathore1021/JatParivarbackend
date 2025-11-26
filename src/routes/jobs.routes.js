@@ -8,31 +8,31 @@ import { JobApplication } from '../models/JobApplication.js'
 
 const r = Router()
 
-r.get(
-  '/',
-  ah(async (req, res) => {
-    const list = await JobPost.find({ approved: true })
-      .sort('-createdAt')
-      .limit(100)
+// r.get(
+//   '/',
+//   ah(async (req, res) => {
+//     const list = await JobPost.find({ approved: true })
+//       .sort('-createdAt')
+//       .limit(100)
 
-    res.json(
-      list.map((job) => ({
-        id: job._id,
-        title: job.title,
-        description: job.description,
-        locationState: job.locationState,
-        locationDistrict: job.locationDistrict,
-        locationCity: job.locationCity,
-        type: job.type,
-        salaryRange: job.salaryRange,
-        createdAt: job.createdAt,
-        updatedAt: job.updatedAt,
-        approved: job.approved,
-        posterId: job.userId,
-      }))
-    )
-  })
-)
+//     res.json(
+//       list.map((job) => ({
+//         id: job._id,
+//         title: job.title,
+//         description: job.description,
+//         locationState: job.locationState,
+//         locationDistrict: job.locationDistrict,
+//         locationCity: job.locationCity,
+//         type: job.type,
+//         salaryRange: job.salaryRange,
+//         createdAt: job.createdAt,
+//         updatedAt: job.updatedAt,
+//         approved: job.approved,
+//         posterId: job.userId,
+//       }))
+//     )
+//   })
+// )
 
 r.get(
   '/mine',
@@ -155,34 +155,81 @@ r.patch(
   })
 )
 
-r.post(
-  '/:id/applications',
-  auth,
+// r.post(
+//   '/:id/applications',
+//   auth,
+//   ah(async (req, res) => {
+//     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+//       return res.status(400).json({ error: 'Invalid job id' })
+//     }
+
+//     const job = await JobPost.findById(req.params.id)
+//     if (!job || !job.approved) {
+//       return res.status(404).json({ error: 'Job not available' })
+//     }
+
+//     if (String(job.userId) === String(req.user._id)) {
+//       return res.status(400).json({ error: 'Cannot apply to your own job' })
+//     }
+
+//     const payload = (({ coverLetter, expectedSalary }) => ({ coverLetter, expectedSalary }))(req.body || {})
+
+//     const application = await JobApplication.findOneAndUpdate(
+//       { jobId: job._id, applicantId: req.user._id },
+//       { $set: payload },
+//       { new: true, upsert: true }
+//     )
+
+//     res.json(application)
+//   })
+// )
+r.get(
+  '/',
+  auth,   
   ah(async (req, res) => {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ error: 'Invalid job id' })
+    const userId = req.user?._id;
+    // 1) Fetch latest approved jobs
+    const jobs = await JobPost.find({ approved: true })
+      .sort('-createdAt')
+      .limit(100)
+      .lean();
+
+    let applicationsMap = {};
+
+    // 2) If user is logged in → fetch all jobs they applied to
+    if (userId) {
+      const apps = await JobApplication.find({ applicantId: userId })
+        .select('jobId')
+        .lean();
+      // Convert to a fast lookup map
+      applicationsMap = apps.reduce((acc, a) => {
+        acc[a.jobId.toString()] = true;
+        return acc;
+      }, {});
     }
 
-    const job = await JobPost.findById(req.params.id)
-    if (!job || !job.approved) {
-      return res.status(404).json({ error: 'Job not available' })
-    }
+    // 3) Build output with applied: true/false
+    const output = jobs.map((job) => ({
+      id: job._id,
+      title: job.title,
+      description: job.description,
+      locationState: job.locationState,
+      locationDistrict: job.locationDistrict,
+      locationCity: job.locationCity,
+      type: job.type,
+      salaryRange: job.salaryRange,
+      createdAt: job.createdAt,
+      updatedAt: job.updatedAt,
+      approved: job.approved,
+      posterId: job.userId,
+      applied: !!applicationsMap[job._id.toString()]   // <----- MAIN CHANGE
+    }));
 
-    if (String(job.userId) === String(req.user._id)) {
-      return res.status(400).json({ error: 'Cannot apply to your own job' })
-    }
-
-    const payload = (({ coverLetter, expectedSalary }) => ({ coverLetter, expectedSalary }))(req.body || {})
-
-    const application = await JobApplication.findOneAndUpdate(
-      { jobId: job._id, applicantId: req.user._id },
-      { $set: payload },
-      { new: true, upsert: true }
-    )
-
-    res.json(application)
+    res.json(output);
   })
-)
+);
+
+
 
 r.get(
   '/:id/applications',
@@ -211,15 +258,15 @@ r.get(
         updatedAt: app.updatedAt,
         applicant: app.applicantId
           ? {
-              id: app.applicantId._id,
-              displayName: app.applicantId.displayName || app.applicantId.name,
-              phone: app.applicantId.phone,
-              email: app.applicantId.email,
-              occupation: app.applicantId.occupation,
-              company: app.applicantId.company,
-              avatarUrl: app.applicantId.avatarUrl,
-              publicNote: app.applicantId.publicNote,
-            }
+            id: app.applicantId._id,
+            displayName: app.applicantId.displayName || app.applicantId.name,
+            phone: app.applicantId.phone,
+            email: app.applicantId.email,
+            occupation: app.applicantId.occupation,
+            company: app.applicantId.company,
+            avatarUrl: app.applicantId.avatarUrl,
+            publicNote: app.applicantId.publicNote,
+          }
           : null,
       }))
     )

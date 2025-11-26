@@ -5,6 +5,7 @@ export const MatrimonyProfile = mongoose.model('MatrimonyProfile', new mongoose.
   visible: { type: Boolean, default: true },
   age: Number,
   gender: String,
+  name: String,
   height: String,
   maritalStatus: String,
   education: String,

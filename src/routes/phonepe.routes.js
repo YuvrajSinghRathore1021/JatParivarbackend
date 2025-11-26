@@ -23,34 +23,164 @@ const sign = (payloadBase64, path) => {
 const redirectUrl = CONFIG.PHONEPE.REDIRECT_URL || `${CONFIG.BASE_URL}${CONFIG.API_PREFIX}/payments/phonepe/callback`
 const callbackUrl = CONFIG.PHONEPE.CALLBACK_URL || `${CONFIG.BASE_URL}${CONFIG.API_PREFIX}/payments/phonepe/webhook`
 
-r.post('/create', ah(async (req, res) => {
-  const { phone, refCode, form, addr, gotra, janAadharUrl, profilePhotoUrl, plan } = req.body
-  const pre = await PreSignup.create({ phone, refCode, form, addr, gotra, janAadharUrl, profilePhotoUrl, plan })
-  const amount = plan === 'founder' ? 10100000 : plan === 'member' ? 5000000 : 210000
+// r.post('/create', ah(async (req, res) => {
+//   const { phone, refCode, form, addr, gotra, janAadharUrl, profilePhotoUrl, plan } = req.body
+//   const pre = await PreSignup.create({ phone, refCode, form, addr, gotra, janAadharUrl, profilePhotoUrl, plan })
+//   const amount = plan === 'founder' ? 10100000 : plan === 'member' ? 5000000 : 210000
+// console.log(process.env.PHONEPE_MERCHANT_ID)
+//   const merchantTransactionId = nanoid(12)
+//   const payload = {
+//     merchantId: process.env.PHONEPE_MERCHANT_ID,
+//     merchantTransactionId,
+//     amount,
+//     redirectUrl: `${redirectUrl}?pre=${pre._id}`,
+//     callbackUrl,
+//     paymentInstrument: { type: "PAY_PAGE" }
+//   }
+//   const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString('base64')
+//   const xverify = sign(payloadBase64)
 
-  const merchantTransactionId = nanoid(12)
+//   const { data } = await axios.post(
+//     `${process.env.PHONEPE_BASE_URL}`,
+//     { request: payloadBase64 },
+//     { headers: { 'Content-Type': 'application/json', 'X-VERIFY': xverify, 'X-MERCHANT-ID': process.env.PHONEPE_MERCHANT_ID } }
+//   )
+
+//   const orderId = data?.data?.merchantTransactionId || merchantTransactionId
+//   await Payment.create({ preSignupId: pre._id, orderId, merchantTransactionId, amount, plan, status: 'created', raw: data })
+
+//   res.json({ redirectUrl: data?.data?.instrumentResponse?.redirectInfo?.url })
+// }))
+
+
+r.post('/create', ah(async (req, res) => {
+
+  const { phone = 7976929440, refCode = "", form = "", addr = "", gotra = "", janAadharUrl = "", profilePhotoUrl = "", plan = "" } = req.body;
+
+  // 1. Create pre-signup entry
+  const pre = await PreSignup.create({
+    phone, refCode, form, addr, gotra, janAadharUrl, profilePhotoUrl, plan
+  });
+
+  // 2. Amount in paisa
+  const amount = plan === 'founder' ? 10100000 : plan === 'member' ? 5000000 : 210000;
+
+  const merchantTransactionId = nanoid(12);
+
+  // 3. PhonePe payment payload
   const payload = {
     merchantId: process.env.PHONEPE_MERCHANT_ID,
     merchantTransactionId,
+    merchantUserId: "U" + phone,
+    mobileNumber: phone,
     amount,
     redirectUrl: `${redirectUrl}?pre=${pre._id}`,
+    redirectMode: "POST",
     callbackUrl,
     paymentInstrument: { type: "PAY_PAGE" }
-  }
-  const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString('base64')
-  const xverify = sign(payloadBase64)
+  };
 
+  // 4. Base64 encode
+  const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString("base64");
+
+  // 5. Correct X-VERIFY checksum
+  const textToHash = payloadBase64 + "/pg/v1/pay" + process.env.PHONEPE_SALT_KEY;
+  const sha256 = crypto.createHash("sha256").update(textToHash).digest("hex");
+  const xverify = sha256 + "###" + process.env.PHONEPE_SALT_INDEX;
+
+  // 6. Make Payment Request
   const { data } = await axios.post(
-    `${process.env.PHONEPE_BASE_URL}`,
+    `${process.env.PHONEPE_BASE_URL}/pg/v1/pay`,
     { request: payloadBase64 },
-    { headers: { 'Content-Type': 'application/json', 'X-VERIFY': xverify, 'X-MERCHANT-ID': process.env.PHONEPE_MERCHANT_ID } }
-  )
+    {
+      headers: {
+        "Content-Type": "application/json",
+        "X-VERIFY": xverify,
+        "X-MERCHANT-ID": process.env.PHONEPE_MERCHANT_ID
+      }
+    }
+  );
 
-  const orderId = data?.data?.merchantTransactionId || merchantTransactionId
-  await Payment.create({ preSignupId: pre._id, orderId, merchantTransactionId, amount, plan, status: 'created', raw: data })
+  // 7. Save payment record
+  const orderId = data?.data?.merchantTransactionId || merchantTransactionId;
 
-  res.json({ redirectUrl: data?.data?.instrumentResponse?.redirectInfo?.url })
-}))
+  await Payment.create({
+    preSignupId: pre._id,
+    orderId,
+    merchantTransactionId,
+    amount,
+    plan,
+    status: "created",
+    raw: data
+  });
+
+  // 8. Send redirect URL to client
+  return res.json({
+    redirectUrl: data?.data?.instrumentResponse?.redirectInfo?.url
+  });
+
+}));
+
+
+// const MERCHANT_ID = "M23NICKDCRP5X";
+// const SALT_KEY = "N2EwNmI0N2ItMGJmMi00Mjg4LTkzYTUtNDdjMWU4OWNlMWI0";
+// const KEY_INDEX = 1;
+
+// r.post("/create", ah(async (req, res) => {
+//   try {
+//     const { MUID=1123, amount=1, number=7976929440 } = req.body;
+
+//     if (!MUID || !amount || !number) {
+//       return res.status(400).json({ message: "Invalid request data" });
+//     }
+
+//     const merchantTransactionId = "M" + Date.now();
+
+//     // Prepare payload (same as PHP)
+//     const payload = {
+//       merchantId: MERCHANT_ID,
+//       merchantTransactionId,
+//       merchantUserId: MUID,
+//       amount: amount * 100,
+//       redirectUrl: `https://indiadealsonlinemedia.com/${merchantTransactionId}`,
+//       redirectMode: "POST",
+//       mobileNumber: number,
+//       paymentInstrument: {
+//         type: "PAY_PAGE",
+//       },
+//     };
+
+//     // Base64 encode
+//     const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString("base64");
+
+//     // Hashing logic (MUST MATCH PHP)
+//     const stringToHash = payloadBase64 + "/pg/v1/pay" + SALT_KEY;
+//     const sha256Hash = crypto.createHash("sha256").update(stringToHash).digest("hex");
+//     const checksum = sha256Hash + "###" + KEY_INDEX;
+
+//     // Send request to PhonePe
+//     const response = await axios.post(
+//       // "https://api.phonepe.com/apis/hermes/pg/v1/pay",
+//       "https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay",
+//       { request: payloadBase64 },
+//       {
+//         headers: {
+//           "Content-Type": "application/json",
+//           "X-VERIFY": checksum,
+//         },
+//       }
+//     );
+
+//     return res.json({
+//       message: "Order processed",
+//       response: response.data,
+//     });
+
+//   } catch (err) {
+//     console.error("Error:", err);
+//     return res.status(500).json({ message: "Internal server error", error: err.message });
+//   }
+// }));
 
 r.post('/webhook', ah(async (req, res) => {
   const event = req.body || {}
