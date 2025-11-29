@@ -368,6 +368,7 @@ const sanitizeGotra = (value) => {
 const sanitizeAddress = (value) => {
   if (!value || typeof value !== 'object') return undefined
   const result = cleanObject({
+    permanentaddress: value.permanentaddress,
     line1: value.line1,
     line2: value.line2,
     state: value.state,

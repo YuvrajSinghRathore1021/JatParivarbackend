@@ -79,99 +79,13 @@ router.get('/profiles', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (r
 // USER: Create / Update Profile
 // =============================
 
-// router.post(
-//   "/save",
-//   requireRole("SUPER_ADMIN", "CONTENT_ADMIN"),
-//   ah(async (req, res) => {
-//     const {
-//       id,
-//       age,
-//       gender,
-//       maritalStatus,
-//       education,
-//       occupation,
-//       state,
-//       district,
-//       city,
-//       village,
-//       gotra,
-//       photos,
-//       visible,
-//       height,
-//     } = req.body || {};
-
-//     // ----------------------------
-//     // SAFE GOTRA
-//     // ----------------------------
-//     const safeGotra = {
-//       self: gotra?.self || "",
-//       mother: gotra?.mother || "",
-//       nani: gotra?.nani || "",
-//       dadi: gotra?.dadi || "",
-//     };
-
-//     // ----------------------------
-//     // SANITIZED DATA
-//     // ----------------------------
-//     const data = {
-//       age,
-//       gender,
-//       maritalStatus,
-//       education,
-//       occupation,
-//       state,
-//       district,
-//       city,
-//       village,
-//       height,
-//       gotra: safeGotra,
-//       photos: Array.isArray(photos) ? photos : [],
-//       visible: visible ?? true,
-//     };
-
-//     let profile;
-
-//     // =====================================
-//     // UPDATE PROFILE (If ID present)
-//     // =====================================
-//     if (id && id !== "save") {
-//       // Validate MongoDB ObjectID
-//       if (!/^[0-9a-fA-F]{24}$/.test(id)) {
-//         return res.status(400).json({ error: "Invalid profile ID" });
-//       }
-
-//       profile = await MatrimonyProfile.findByIdAndUpdate(
-//         id,
-//         { $set: data },
-//         { new: true }
-//       );
-
-//       if (!profile) {
-//         return res.status(404).json({ error: "Profile not found" });
-//       }
-//     }
-
-//     // =====================================
-//     // CREATE NEW PROFILE (No ID)
-//     // =====================================
-//     else {
-//       profile = await MatrimonyProfile.create({
-//         ...data,
-//         userId: null, // Admin-created profile
-//       });
-//     }
-
-//     return res.json(profile);
-//   })
-// );
-
 
 router.post("/save", requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req, res) => {
   const {
     id,
     age, gender, maritalStatus, education, occupation,
     state, district, city, village,
-    gotra, photos, visible, height,name
+    gotra, photos, visible, height,name,address,parentaladdress
   } = req.body || {};
 
   // Data without userId — admin must not overwrite it
@@ -189,7 +103,7 @@ router.post("/save", requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req,
     gotra,
     photos,
     visible,
-    name
+    name,address,parentaladdress
   };
 
   let profile;

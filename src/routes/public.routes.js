@@ -401,18 +401,17 @@ r.get("/gaurav", async (req, res) => {
 
   // Filter by timeline (searching inside nested sections)
   if (timeline === "PRESENT") {
-    filter["present.timeline"] = "PRESENT";
+    filter["data.timeline"] = "PRESENT";
   }
 
   if (timeline === "PAST") {
-    filter["past.timeline"] = "PAST";
+    filter["data.timeline"] = "PAST";
   }
 
   // Filter by category (nested)
   if (category) {
     filter.$or = [
-      { "present.category": category },
-      { "past.category": category }
+      { "data.category": category }
     ];
   }
 
@@ -423,8 +422,7 @@ r.get("/gaurav", async (req, res) => {
     filter.$or = [
       { name: regex },
       { title: regex },
-      { "present.biography": regex },
-      { "past.biography": regex }
+      { "data.biography": regex }
     ];
   }
 

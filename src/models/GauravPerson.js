@@ -34,8 +34,7 @@ const gauravSchema = new mongoose.Schema(
     photo: String,
     visible: { type: Boolean, default: true },
 
-    present: { type: sectionSchema, default: () => ({ timeline: "PRESENT" }) },
-    past: { type: sectionSchema, default: () => ({ timeline: "PAST" }) }
+    data: { type: sectionSchema, default: () => ({ timeline: "PRESENT" }) }
   },
   { timestamps: true }
 );

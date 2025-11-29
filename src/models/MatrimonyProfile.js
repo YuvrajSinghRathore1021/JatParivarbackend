@@ -9,6 +9,8 @@ export const MatrimonyProfile = mongoose.model('MatrimonyProfile', new mongoose.
   height: String,
   maritalStatus: String,
   education: String,
+  address: String,
+  parentaladdress: String,
   occupation: String,
   state: String, district: String, city: String, village: String,
   gotra: { self: String, mother: String, nani: String, dadi: String },

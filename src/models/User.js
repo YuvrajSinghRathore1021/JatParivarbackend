@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import { ensurePersonForUser, mapUserRoleToPersonRole, removePersonForUser } from '../utils/personSync.js'
 
 const addressSchema = new mongoose.Schema({
+  permanentaddress: String,
   line1: String,
   line2: String,
   state: String,
