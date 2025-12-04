@@ -32,7 +32,9 @@ const serializeUser = (user) => ({
   gender: user.gender,
   maritalStatus: user.maritalStatus,
   dateOfBirth: user.dateOfBirth,
-  address: user.address,
+  occupationAddress: user.occupationAddress,
+  currentAddress: user.currentAddress,
+  parentalAddress: user.parentalAddress,
   gotra: user.gotra,
   occupation: user.occupation,
   company: user.company,
@@ -41,6 +43,9 @@ const serializeUser = (user) => ({
   contactEmail: user.contactEmail,
   publicNote: user.publicNote,
   janAadhaarUrl: user.janAadhaarUrl,
+  bussinessurl: user.bussinessurl,
+  adimage: user.adimage,
+  message: user.message,
   documents: user.documents,
   customFields: user.customFields,
   createdAt: user.createdAt,
@@ -100,8 +105,8 @@ router.get('/', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN', 'FINANCE_ADMIN'), ah
   }
   if (status) filter.status = status
   if (role) filter.role = role
-  if (state) filter['address.state'] = state
-  if (city) filter['address.city'] = city
+  if (state) filter['currentAddress.state'] = state
+  if (city) filter['currentAddress.city'] = city
   if (from || to) {
     filter.createdAt = {}
     if (from) filter.createdAt.$gte = new Date(from)
@@ -183,16 +188,21 @@ router.post('/', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req, res
     occupation: body.occupation,
     company: body.company,
     avatarUrl: body.avatarUrl,
+    bussinessurl: body.bussinessurl,
+    adimage: body.adimage,
+    message: body.message,
     janAadhaarUrl: body.janAadhaarUrl,
     planId: plan?._id,
     planTitle: plan?.titleEn || body.planTitle,
     planAmount: plan?.price || body.planAmount,
     referralCode,
     gotra: sanitizeGotra(body.gotra),
-    address: sanitizeAddress(body.address),
     education: sanitizeEducation(body.education),
     dateOfBirth: parseDate(body.dateOfBirth),
-    passwordHash: await bcrypt.hash(password, 10)
+    passwordHash: await bcrypt.hash(password, 10),
+    occupationAddress: body.occupationAddress,
+    currentAddress: body.currentAddress,
+    parentalAddress: body.parentalAddress
   })
 
   const user = await User.create(userPayload)
@@ -200,7 +210,7 @@ router.post('/', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req, res
   await ensurePersonForUser(user, {
     name: userPayload.displayName || userPayload.name,
     photo: userPayload.avatarUrl,
-    place: userPayload.address?.city,
+    place: userPayload.currentAddress?.city,
     publicNote: userPayload.publicNote
   })
 
@@ -246,10 +256,15 @@ router.patch('/:id', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN', 'FINANCE_ADMIN'
     company: body.company,
     avatarUrl: body.avatarUrl,
     janAadhaarUrl: body.janAadhaarUrl,
+    bussinessurl: body.bussinessurl,
+    adimage: body.adimage,
+    message: body.message,
     planTitle: body.planTitle,
     planAmount: body.planAmount,
     gotra: sanitizeGotra(body.gotra),
-    address: sanitizeAddress(body.address),
+    occupationAddress: body.occupationAddress,
+    currentAddress: body.currentAddress,
+    parentalAddress: body.parentalAddress,
     education: sanitizeEducation(body.education),
     dateOfBirth: parseDate(body.dateOfBirth)
   })
@@ -284,7 +299,7 @@ router.patch('/:id', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN', 'FINANCE_ADMIN'
   await ensurePersonForUser(user, {
     name: user.displayName || user.name,
     photo: user.avatarUrl,
-    place: user.address?.city,
+    place: user.currentAddress?.city,
     publicNote: user.publicNote
   })
 
@@ -315,7 +330,7 @@ router.patch('/:id/status', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN'), ah(asyn
   await ensurePersonForUser(user, {
     name: user.displayName || user.name,
     photo: user.avatarUrl,
-    place: user.address?.city,
+    place: user.currentAddress?.city,
     publicNote: user.publicNote
   })
 

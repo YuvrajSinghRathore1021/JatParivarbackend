@@ -3,15 +3,40 @@ import mongoose from 'mongoose'
 import bcrypt from 'bcryptjs'
 import { ensurePersonForUser, mapUserRoleToPersonRole, removePersonForUser } from '../utils/personSync.js'
 
-const addressSchema = new mongoose.Schema({
-  permanentaddress: String,
-  line1: String,
-  line2: String,
+
+const occupationAddressSchema = new mongoose.Schema({
+  occupationaddress: String,
   state: String,
+  stateCode: String,
   district: String,
+  districtCode: String,
   city: String,
-  pin: String
+  cityCode: String,
+  village: String
 }, { _id: false })
+
+const currentAddressSchema = new mongoose.Schema({
+  currentaddress: String,
+  state: String,
+  stateCode: String,
+  district: String,
+  districtCode: String,
+  city: String,
+  cityCode: String,
+  village: String
+}, { _id: false })
+
+const parentalAddressSchema = new mongoose.Schema({
+  currentaddress: String,
+  state: String,
+  stateCode: String,
+  district: String,
+  districtCode: String,
+  city: String,
+  cityCode: String,
+  village: String
+}, { _id: false })
+
 
 const gotraSchema = new mongoose.Schema({
   self: String,
@@ -42,7 +67,10 @@ const userSchema = new mongoose.Schema({
   company: String,
   gender: { type: String, enum: ['male', 'female', 'other', 'prefer_not_to_say'], default: 'prefer_not_to_say' },
   dateOfBirth: Date,
-  address: addressSchema,
+  // occupationAddress,currentAddress,parentalAddress
+  occupationAddress: occupationAddressSchema,
+  currentAddress: currentAddressSchema,
+  parentalAddress: parentalAddressSchema,
   gotra: gotraSchema,
   contactEmail: String,
   alternatePhone: String,
@@ -54,6 +82,9 @@ const userSchema = new mongoose.Schema({
   planAmount: Number,
   status: { type: String, enum: ['active', 'disabled', 'pending'], default: 'active' },
   janAadhaarUrl: String,
+  bussinessurl: String,
+  adimage: String,
+  message: String,
   documents: [{ name: String, url: String }],
   customFields: { type: Map, of: String }
 }, { timestamps: true })

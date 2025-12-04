@@ -17,7 +17,7 @@ r.get('/profiles', ah(async (req, res) => {
         { createdAt: -1 }
 
   const profiles = await MatrimonyProfile.find({ visible: true })
-    .populate('userId', 'displayName name gender maritalStatus occupation company state district city phone publicNote avatarUrl height address parentaladdress')
+    .populate('userId', 'displayName name gender maritalStatus occupation company phone publicNote avatarUrl height currentAddress occupationAddress parentalAddress')
     .sort(order)
     .limit(100)
     .lean()
@@ -31,11 +31,13 @@ r.get('/profiles', ah(async (req, res) => {
       gender: p.gender,
       height: p.height,
       maritalStatus: p.maritalStatus,
-      address: p.address,
-      parentaladdress: p.parentaladdress,
+
       education: p.education,
       occupation: p.occupation,
-      location: { state: p.state, district: p.district, city: p.city, village: p.village },
+      occupationAddress: p.occupationAddress,
+      currentAddress: p.currentAddress,
+      parentalAddress: p.parentalAddress,
+      location: p.currentAddress,
       gotra: p.gotra,
       photos: p.photos,
       updatedAt: p.updatedAt,
@@ -80,10 +82,10 @@ r.get('/:id', auth, ah(async (req, res) => {
 r.post('/profiles', auth, ah(async (req, res) => {
   const body = (({
     age, gender, maritalStatus, education, occupation,
-    state, district, city, village, gotra, photos, visible, height, name, address, parentaladdress
+    currentAddress, occupationAddress, parentalAddress, gotra, photos, visible, height, name
   }) => ({
     age, gender, maritalStatus, education, occupation,
-    state, district, city, village, gotra, photos, visible, height, name, address, parentaladdress
+    currentAddress, occupationAddress, parentalAddress, gotra, photos, visible, height, name
   }))(req.body || {})
 
   const up = await MatrimonyProfile.findOneAndUpdate(
@@ -165,7 +167,7 @@ r.get('/interests', auth, ah(async (req, res) => {
         maritalStatus: profile.maritalStatus,
         education: profile.education,
         occupation: profile.occupation,
-        location: { state: profile.state, district: profile.district, city: profile.city },
+        location: profile.currentAddress,
         gotra: profile.gotra,
       } : null,
     }

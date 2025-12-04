@@ -15,7 +15,7 @@ import { gauravs } from "../models/GauravPerson.js";
 
 const r = Router()
 
-const PERSON_USER_FIELDS = 'displayName name avatarUrl occupation company publicNote contactEmail phone alternatePhone address planTitle planAmount role status referralCode'
+const PERSON_USER_FIELDS = 'displayName name avatarUrl occupation company publicNote contactEmail phone alternatePhone address planTitle planAmount role status referralCode bussinessurl adimage message'
 const ensureRosterForRole = async (personRole) => {
   const normalized = personRole === 'management' ? 'management' : 'founder'
   const userRole = normalized === 'management' ? 'member' : 'founder'
@@ -44,7 +44,6 @@ const readSetting = async (key, fallback) => {
 const serializePublicPerson = (doc) => {
   if (!doc) return null
   const user = doc.userId || doc.user || null
-
   return {
     id: doc._id,
     role: doc.role,
@@ -60,6 +59,9 @@ const serializePublicPerson = (doc) => {
     visible: doc.visible,
     order: doc.order,
     socials: doc.socials,
+    bussinessurl: user?.bussinessurl || null,
+    adimage: user?.adimage || null,
+    message: user?.message || null,
     user: user
       ? {
         id: user._id,
@@ -437,5 +439,124 @@ r.get("/gaurav", async (req, res) => {
   res.json({ data: list });
 });
 
+
+
+
+
+// r.get('/foundpeople', ah(async (req, res) => {
+//   const { role, limit, state, district, city, gotra, occupation } = req.query
+//   const filter = { visible: true }
+
+//   const q = Person.find(filter).sort({ order: 1, createdAt: -1 }).populate({ path: 'userId', select: PERSON_USER_FIELDS })
+//   const parsedLimit = parseInt(limit, 10)
+//   if (!Number.isNaN(parsedLimit) && parsedLimit > 0) {
+//     q.limit(parsedLimit)
+//   }
+
+//   const people = await q.lean()
+//   res.json(dedupePeopleByUser(people).map(serializePublicPerson))
+// }))
+
+
+r.get('/foundpeople', ah(async (req, res) => {
+  const {
+    page = 1,
+    pageSize = 20,
+    state, district, city, gotra, occupation, search, status, role,
+    from, to,
+    sortBy = 'createdAt',
+    sortDir = 'desc'
+  } = req.query
+
+  const parsedPage = Math.max(1, parseInt(page, 10) || 1)
+  const parsedPageSize = Math.min(100, Math.max(1, parseInt(pageSize, 10) || 20))
+
+  const filter = {}
+  if (search) {
+    const regex = new RegExp(search, 'i')
+    filter.$or = [
+      { name: regex },
+
+      { alternatePhone: regex },
+      { referralCode: regex },
+      { 'gotra.self': regex },
+
+    ]
+  }
+  if (status) filter.status = status
+  if (role) filter.role = role
+  if (state) filter['currentAddress.stateCode'] = state
+  if (district) filter['currentAddress.districtCode'] = district
+  if (city) filter['currentAddress.cityCode'] = city
+  if (gotra) filter['gotra.self'] = gotra
+  if (occupation) filter['occupation'] = occupation
+  // if (from || to) {
+  //   filter.createdAt = {}
+  //   if (from) filter.createdAt.$gte = new Date(from)
+  //   if (to) filter.createdAt.$lte = new Date(to)
+  // }
+
+  const allowedSortBy = new Set(['createdAt', 'name', 'role'])
+  const sortField = allowedSortBy.has(sortBy) ? sortBy : 'createdAt'
+  const sortOrder = sortDir === 'asc' ? 1 : -1
+  const sort = { [sortField]: sortOrder }
+  if (sortField !== 'createdAt') {
+    sort.createdAt = -1
+  }
+
+  const skip = (parsedPage - 1) * parsedPageSize
+
+  const [data, total] = await Promise.all([
+    User.find(filter)
+      .sort(sort)
+      .skip(skip)
+      .limit(parsedPageSize),
+    User.countDocuments(filter)
+  ])
+
+  res.json({
+    data: data.map(serializeUser),
+    meta: {
+      total,
+      page: parsedPage,
+      pageSize: parsedPageSize,
+      sortBy: sortField,
+      sortDir: sortOrder === 1 ? 'asc' : 'desc'
+    }
+  })
+}))
+
+
+
+const serializeUser = (user) => ({
+  id: user._id,
+  name: user.name,
+  displayName: user.displayName,
+  email: user.email,
+
+
+
+  role: user.role,
+  gender: user.gender,
+  maritalStatus: user.maritalStatus,
+
+  occupationAddress: user.occupationAddress,
+  currentAddress: user.currentAddress,
+  parentalAddress: user.parentalAddress,
+  gotra: user.gotra,
+  occupation: user.occupation,
+  company: user.company,
+
+  avatarUrl: user.avatarUrl,
+  contactEmail: user.contactEmail,
+  publicNote: user.publicNote,
+
+  bussinessurl: user.bussinessurl,
+  adimage: user.adimage,
+  message: user.message,
+
+  createdAt: user.createdAt,
+  updatedAt: user.updatedAt
+})
 
 export default r
