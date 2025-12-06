@@ -242,6 +242,31 @@ r.get('/history', ah(async (req, res) => {
   })))
 }))
 
+
+// routes/public/history.js
+
+r.get('/history/:id', ah(async (req, res) => {
+  const { id } = req.params;
+
+  const item = await HistoryItem.findById(id).lean();
+  if (!item) return res.status(404).json({ error: "Not found" });
+
+  res.json({
+    id: item._id,
+    category: item.category,
+    year: item.year,
+    order: item.order,
+    titleEn: item.titleEn,
+    titleHi: item.titleHi,
+    bodyEn: item.bodyEn,
+    bodyHi: item.bodyHi,
+    imageUrl: item.imageUrl,
+    bannerUrl: item.bannerUrl || item.imageUrl,
+    place: item.place,
+    createdAt: item.createdAt
+  });
+}));
+
 // Community news listing
 r.get('/news', ah(async (_req, res) => {
   const items = await NewsItem.find({ published: true })

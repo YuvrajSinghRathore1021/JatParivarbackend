@@ -19,6 +19,7 @@ import institutionsRoutes from './routes/institutions.routes.js'
 import meRoutes from './routes/me.routes.js'
 import geoRoutes from './routes/geo.routes.js'
 import adminRoutes from './routes/admin/index.js'
+import foundRoutes from './routes/found.routes.js'
 
 await connectDB()
 
@@ -74,6 +75,7 @@ app.use(`${CONFIG.API_PREFIX}/auth`, authRoutes)
 app.use(`${CONFIG.API_PREFIX}/otp`, otpRoutes)
 app.use(`${CONFIG.API_PREFIX}/payments/phonepe`, phonepeRoutes)
 app.use(`${CONFIG.API_PREFIX}/public`, publicRoutes)
+app.use(`${CONFIG.API_PREFIX}/found`, foundRoutes)
 app.use(`${CONFIG.API_PREFIX}/uploads`, uploadRoutes)
 app.use(`${CONFIG.API_PREFIX}/matrimony`, matrimonyRoutes)
 app.use(`${CONFIG.API_PREFIX}/jobs`, jobsRoutes)
