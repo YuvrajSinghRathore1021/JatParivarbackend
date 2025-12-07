@@ -31,7 +31,7 @@ r.get(
   auth,
   ah(async (req, res) => {
     const user = await User.findById(req.user._id).select(
-      'name displayName email phone avatarUrl publicNote occupation company gender maritalStatus address gotra contactEmail alternatePhone referralCode planTitle planAmount role education janAadhaarUrl dateOfBirth status'
+      'name displayName email phone avatarUrl publicNote occupation company gender maritalStatus occupationAddress parentalAddress currentAddress gotra contactEmail alternatePhone referralCode planTitle planAmount role education janAadhaarUrl dateOfBirth status'
     )
     const person = await Person.findOne({ userId: req.user._id })
     res.json({ user, person })
@@ -61,7 +61,10 @@ r.put(
     if (body.janAadhaarUrl !== undefined) user.janAadhaarUrl = body.janAadhaarUrl
     if (body.education !== undefined) user.education = sanitizeEducation(body.education)
     if (body.gotra !== undefined) user.gotra = sanitizeGotra(body.gotra)
-    if (body.address !== undefined) user.address = sanitizeAddress(body.address)
+    if (body.occupationAddress !== undefined) user.occupationAddress = sanitizeAddress(body.occupationAddress)
+    if (body.parentalAddress !== undefined) user.parentalAddress = sanitizeAddress(body.parentalAddress)
+    if (body.currentAddress !== undefined) user.currentAddress = sanitizeAddress(body.currentAddress)
+      
 
     if (body.dateOfBirth !== undefined) {
       user.dateOfBirth = parseDate(body.dateOfBirth) ?? undefined
@@ -91,7 +94,7 @@ r.put(
       const overrides = {
         name: user.displayName || user.name,
         photo: user.avatarUrl,
-        place: user.address?.city,
+        place: user.currentAddress?.city,
         publicNote: user.publicNote
       }
 
@@ -119,7 +122,7 @@ r.put(
     }
 
     const nextUser = await User.findById(req.user._id).select(
-      'name displayName email phone avatarUrl publicNote occupation company gender maritalStatus address gotra contactEmail alternatePhone referralCode planTitle planAmount role education janAadhaarUrl dateOfBirth status'
+      'name displayName email phone avatarUrl publicNote occupation company gender maritalStatus occupationAddress parentalAddress currentAddress gotra contactEmail alternatePhone referralCode planTitle planAmount role education janAadhaarUrl dateOfBirth status'
     )
     const nextPerson = await Person.findOne({ userId: req.user._id })
     res.json({ user: nextUser, person: nextPerson })
@@ -135,7 +138,7 @@ r.put(
       return res.status(400).json({ error: 'avatarUrl is required' })
     }
 
-    const user = await User.findById(req.user._id).select('avatarUrl displayName name phone planTitle planAmount role address publicNote')
+    const user = await User.findById(req.user._id).select('avatarUrl displayName name phone planTitle planAmount role occupationAddress parentalAddress currentAddress publicNote')
     if (!user) return res.status(404).json({ error: 'User not found' })
 
     const previous = user.avatarUrl
@@ -145,7 +148,7 @@ r.put(
     await ensurePersonForUser(user, {
       photo: user.avatarUrl,
       name: user.displayName || user.name,
-      place: user.address?.city,
+      place: user.currentAddress?.city,
       publicNote: user.publicNote
     })
 
@@ -206,12 +209,13 @@ const sanitizeGotra = (value) => {
 const sanitizeAddress = (value) => {
   if (!value || typeof value !== 'object') return undefined
   const result = {}
-  if (value.line1 !== undefined) result.line1 = value.line1
-  if (value.line2 !== undefined) result.line2 = value.line2
   if (value.state !== undefined) result.state = value.state
+  if (value.stateCode !== undefined) result.stateCode = value.stateCode
   if (value.district !== undefined) result.district = value.district
+  if (value.districtCode !== undefined) result.districtCode = value.districtCode
   if (value.city !== undefined) result.city = value.city
-  if (value.pin !== undefined) result.pin = value.pin
+  if (value.cityCode !== undefined) result.cityCode = value.cityCode
+  if (value.village !== undefined) result.village = value.village
   return Object.keys(result).length ? result : undefined
 }
 
