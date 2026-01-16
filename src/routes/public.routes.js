@@ -346,10 +346,42 @@ r.get('/site/footer', ah(async (_req, res) => {
 }))
 
 // Home impact + milestones section
+// r.get('/site/home-impact', ah(async (_req, res) => {
+//   const impact = await readSetting('site.home.impact', { stats: [], milestones: [] })
+//   res.json(impact)
+// }))
+
+
 r.get('/site/home-impact', ah(async (_req, res) => {
-  const impact = await readSetting('site.home.impact', { stats: [], milestones: [] })
+
+  const items = await Achievement
+    .find({ active: true })
+    .sort({ order: 1, createdAt: 1 })
+    .lean()
+
+  const mappedItems = items.map(item => ({
+    id: item._id.toString(),          // or use uuid if needed
+    labelEn: item.textEn || '',
+    labelEn: item.textHi || '',
+    value: '',
+    descriptionEn: '',
+    descriptionHi: '',
+    dateLabelEn: '',
+    dateLabelHi: ''
+  }))
+
+  const impact = await readSetting('site.home.impact', {
+    stats: [],
+    milestones: []
+  })
+
+  // attach mapped items where needed
+  impact.stats = mappedItems
+
   res.json(impact)
 }))
+
+
 
 // // CMS pages
 // r.get('/pages/:slug', ah(async (req, res) => {

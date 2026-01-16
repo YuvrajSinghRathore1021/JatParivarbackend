@@ -155,37 +155,37 @@ r.patch(
   })
 )
 
-// r.post(
-//   '/:id/applications',
-//   auth,
-//   ah(async (req, res) => {
-//     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-//       return res.status(400).json({ error: 'Invalid job id' })
-//     }
+r.post(
+  '/:id/applications',
+  auth,
+  ah(async (req, res) => {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid job id' })
+    }
 
-//     const job = await JobPost.findById(req.params.id)
-//     if (!job || !job.approved) {
-//       return res.status(404).json({ error: 'Job not available' })
-//     }
+    const job = await JobPost.findById(req.params.id)
+    if (!job || !job.approved) {
+      return res.status(404).json({ error: 'Job not available' })
+    }
 
-//     if (String(job.userId) === String(req.user._id)) {
-//       return res.status(400).json({ error: 'Cannot apply to your own job' })
-//     }
+    if (String(job.userId) === String(req.user._id)) {
+      return res.status(400).json({ error: 'Cannot apply to your own job' })
+    }
 
-//     const payload = (({ coverLetter, expectedSalary }) => ({ coverLetter, expectedSalary }))(req.body || {})
+    const payload = (({ coverLetter, expectedSalary }) => ({ coverLetter, expectedSalary }))(req.body || {})
 
-//     const application = await JobApplication.findOneAndUpdate(
-//       { jobId: job._id, applicantId: req.user._id },
-//       { $set: payload },
-//       { new: true, upsert: true }
-//     )
+    const application = await JobApplication.findOneAndUpdate(
+      { jobId: job._id, applicantId: req.user._id },
+      { $set: payload },
+      { new: true, upsert: true }
+    )
 
-//     res.json(application)
-//   })
-// )
+    res.json(application)
+  })
+)
 r.get(
   '/',
-  auth,   
+  auth,
   ah(async (req, res) => {
     const userId = req.user?._id;
     // 1) Fetch latest approved jobs
