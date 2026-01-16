@@ -48,7 +48,7 @@ r.get('/foundpeople', ah(async (req, res) => {
     //   if (to) filter.createdAt.$lte = new Date(to)
     // }
 
-    const allowedSortBy = new Set(['createdAt', 'name', 'role'])
+    const allowedSortBy = new Set(['createdAt', 'name', 'role', 'occupation'])
     const sortField = allowedSortBy.has(sortBy) ? sortBy : 'createdAt'
     const sortOrder = sortDir === 'asc' ? 1 : -1
     const sort = { [sortField]: sortOrder }

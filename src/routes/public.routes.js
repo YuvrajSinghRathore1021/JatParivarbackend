@@ -221,6 +221,27 @@ r.get('/people/:id', ah(async (req, res) => {
   res.json(serializePublicPerson(person))
 }))
 
+
+r.get('/user/:id', ah(async (req, res) => {
+  const { id } = req.params
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ error: 'Invalid user id' })
+  }
+
+  // 1️⃣ Get user
+  const user = await User.findById(id).lean()
+
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' })
+  }
+
+  res.json({
+    person: user || null
+  })
+}))
+
+
 // History timeline
 r.get('/history', ah(async (req, res) => {
   const { category = 'history' } = req.query

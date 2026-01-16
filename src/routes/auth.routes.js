@@ -30,6 +30,30 @@ r.post('/check-phone', ah(async (req, res) => {
   const exists = await User.exists({ phone })
   res.json({ exists: Boolean(exists) })
 }))
+// routes/auth.js (or same file where check-phone exists)
+
+r.post('/check-referral', ah(async (req, res) => {
+  const { code } = req.body || {}
+
+  // 1️⃣ Required
+  if (!code) {
+    return res.status(400).json({ error: 'Referral code is required' })
+  }
+
+  // 2️⃣ Normalize (important)
+  const refCode = String(code).trim().toUpperCase()
+
+  // 3️⃣ Format validation
+  if (!/^[A-Z0-9]{6}$/.test(refCode)) {
+    return res.status(400).json({ error: 'Invalid referral code format' })
+  }
+
+  // 4️⃣ Check existence
+  const exists = await User.exists({ referralCode: refCode })
+
+  // 5️⃣ Response
+  res.json({ exists: Boolean(exists) })
+}))
 
 r.post('/register', ah(async (req, res) => {
   const body = req.body && typeof req.body === 'object' ? req.body : {}

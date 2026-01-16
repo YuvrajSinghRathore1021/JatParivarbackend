@@ -64,22 +64,22 @@ r.put(
     if (body.occupationAddress !== undefined) user.occupationAddress = sanitizeAddress(body.occupationAddress)
     if (body.parentalAddress !== undefined) user.parentalAddress = sanitizeAddress(body.parentalAddress)
     if (body.currentAddress !== undefined) user.currentAddress = sanitizeAddress(body.currentAddress)
-      
+
 
     if (body.dateOfBirth !== undefined) {
       user.dateOfBirth = parseDate(body.dateOfBirth) ?? undefined
     }
 
     const defaultPersonRole = mapUserRoleToPersonRole(user.role)
-  const {
-    spotlightRole,
-    spotlightTitle,
-    spotlightPlace,
-    spotlightBioEn,
-    spotlightBioHi,
-    spotlightBannerUrl,
-    spotlightVisible
-  } = body
+    const {
+      spotlightRole,
+      spotlightTitle,
+      spotlightPlace,
+      spotlightBioEn,
+      spotlightBioHi,
+      spotlightBannerUrl,
+      spotlightVisible
+    } = body
 
     if (spotlightRole && spotlightRole !== 'none' && spotlightRole !== defaultPersonRole) {
       return res.status(403).json({ error: 'Listing role must match your membership role' })
@@ -89,6 +89,7 @@ r.put(
     }
 
     await user.save()
+
 
     if (defaultPersonRole) {
       const overrides = {
