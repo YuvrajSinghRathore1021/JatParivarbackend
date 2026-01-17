@@ -21,6 +21,7 @@ const serialize = (item) => ({
   bodyHi: item.bodyHi,
   heroImageUrl: item.heroImageUrl,
   published: item.published,
+  publishHome: item.publishHome,
   publishedAt: item.publishedAt,
   createdAt: item.createdAt,
   updatedAt: item.updatedAt

@@ -96,7 +96,12 @@ r.put(
         name: user.displayName || user.name,
         photo: user.avatarUrl,
         place: user.currentAddress?.city,
-        publicNote: user.publicNote
+        publicNote: user.publicNote,
+        // ✅ MATCH PERSON SCHEMA
+        currentAddress: user.currentAddress,
+        parentalAddress: user.parentalAddress,
+        occupationAddress: user.occupationAddress
+
       }
 
       if (spotlightTitle !== undefined) overrides.title = spotlightTitle
@@ -150,7 +155,12 @@ r.put(
       photo: user.avatarUrl,
       name: user.displayName || user.name,
       place: user.currentAddress?.city,
-      publicNote: user.publicNote
+      publicNote: user.publicNote,
+      // ✅ MATCH PERSON SCHEMA
+      currentAddress: user.currentAddress,
+      parentalAddress: user.parentalAddress,
+      occupationAddress: user.occupationAddress
+
     })
 
     if (previous && previous !== avatarUrl) {

@@ -11,6 +11,7 @@ export const NewsItem = mongoose.model('NewsItem', new mongoose.Schema({
   bodyHi: String,
   heroImageUrl: String,
   published: { type: Boolean, default: false },
+  publishHome: { type: Boolean, default: false },
   publishedAt: Date,
   createdBy: { type: mongoose.Types.ObjectId, ref: 'Admin' }
 }, { timestamps: true }))

@@ -18,7 +18,11 @@ const personFields = [
   'bioHi',
   'socials',
   'visible',
-  'order'
+  'order',
+  // 🔥 ADD THESE
+  'currentAddress',
+  'parentalAddress',
+  'occupationAddress'
 ]
 
 const hasOwn = (obj, key) => Object.prototype.hasOwnProperty.call(obj || {}, key)
@@ -134,6 +138,14 @@ function getUserFallback(user, field) {
       return user.avatarUrl || undefined
     case 'place':
       return user.address?.city || undefined
+    case 'currentAddress':
+      return user.currentAddress || undefined
+
+    case 'parentalAddress':
+      return user.parentalAddress || undefined
+
+    case 'occupationAddress':
+      return user.occupationAddress || undefined
     case 'publicNote':
       return user.publicNote || undefined
     default:

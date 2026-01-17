@@ -66,7 +66,8 @@ const serializePerson = (person) => person ? ({
   bioHi: person.bioHi,
   visible: person.visible,
   order: person.order,
-  socials: person.socials
+  socials: person.socials,
+  addresses: person.addresses,
 }) : null
 
 router.get('/', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN', 'FINANCE_ADMIN'), ah(async (req, res) => {
@@ -300,7 +301,12 @@ router.patch('/:id', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN', 'FINANCE_ADMIN'
     name: user.displayName || user.name,
     photo: user.avatarUrl,
     place: user.currentAddress?.city,
-    publicNote: user.publicNote
+    publicNote: user.publicNote,
+    // ✅ MATCH PERSON SCHEMA
+    currentAddress: user.currentAddress,
+    parentalAddress: user.parentalAddress,
+    occupationAddress: user.occupationAddress
+
   })
 
   await logAudit({
@@ -331,7 +337,12 @@ router.patch('/:id/status', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN'), ah(asyn
     name: user.displayName || user.name,
     photo: user.avatarUrl,
     place: user.currentAddress?.city,
-    publicNote: user.publicNote
+    publicNote: user.publicNote,
+    // ✅ MATCH PERSON SCHEMA
+    currentAddress: user.currentAddress,
+    parentalAddress: user.parentalAddress,
+    occupationAddress: user.occupationAddress
+
   })
 
   await logAudit({

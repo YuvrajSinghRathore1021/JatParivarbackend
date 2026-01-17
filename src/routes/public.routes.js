@@ -15,7 +15,7 @@ import { gauravs } from "../models/GauravPerson.js";
 
 const r = Router()
 
-const PERSON_USER_FIELDS = 'displayName name avatarUrl occupation company publicNote contactEmail phone alternatePhone address planTitle planAmount role status referralCode bussinessurl adimage message'
+const PERSON_USER_FIELDS = 'displayName name avatarUrl occupation company publicNote contactEmail phone alternatePhone address planTitle planAmount role status referralCode bussinessurl adimage message currentAddress parentalAddress occupationAddress'
 const ensureRosterForRole = async (personRole) => {
   const normalized = personRole === 'management' ? 'management' : 'founder'
   const userRole = normalized === 'management' ? 'member' : 'founder'
@@ -80,6 +80,10 @@ const serializePublicPerson = (doc) => {
         planAmount: user.planAmount,
         status: user.status,
         referralCode: user.referralCode,
+        addresses: user.addresses,
+        currentAddress: user.currentAddress,
+        parentalAddress: user.parentalAddress,
+        occupationAddress: user.occupationAddress
       }
       : null,
   }
@@ -289,10 +293,32 @@ r.get('/history/:id', ah(async (req, res) => {
 }));
 
 // Community news listing
+// r.get('/news', ah(async (_req, res) => {
+//   const items = await NewsItem.find({ published: true })
+//     .sort({ publishedAt: -1, createdAt: -1 })
+//     .lean()
+//   res.json(items.map((item) => ({
+//     id: item._id,
+//     slug: item.slug,
+//     titleEn: item.titleEn,
+//     titleHi: item.titleHi,
+//     excerptEn: item.excerptEn,
+//     excerptHi: item.excerptHi,
+//     heroImageUrl: item.heroImageUrl,
+//     publishHome: item.publishHome,
+//     publishedAt: item.publishedAt,
+//     createdAt: item.createdAt
+//   })))
+// }))
 r.get('/news', ah(async (_req, res) => {
-  const items = await NewsItem.find({ published: true })
+  const items = await NewsItem.find({
+    published: true,
+    publishHome: true
+  })
     .sort({ publishedAt: -1, createdAt: -1 })
+    .limit(5)
     .lean()
+
   res.json(items.map((item) => ({
     id: item._id,
     slug: item.slug,
@@ -301,6 +327,7 @@ r.get('/news', ah(async (_req, res) => {
     excerptEn: item.excerptEn,
     excerptHi: item.excerptHi,
     heroImageUrl: item.heroImageUrl,
+    publishHome: item.publishHome,
     publishedAt: item.publishedAt,
     createdAt: item.createdAt
   })))
@@ -319,6 +346,7 @@ r.get('/news/:slug', ah(async (req, res) => {
     bodyEn: item.bodyEn,
     bodyHi: item.bodyHi,
     heroImageUrl: item.heroImageUrl,
+    publishHome: item.publishHome,
     publishedAt: item.publishedAt,
     createdAt: item.createdAt
   })
