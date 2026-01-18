@@ -295,24 +295,24 @@ r.get('/history/:id', ah(async (req, res) => {
 }));
 
 // Community news listing
-// r.get('/news', ah(async (_req, res) => {
-//   const items = await NewsItem.find({ published: true })
-//     .sort({ publishedAt: -1, createdAt: -1 })
-//     .lean()
-//   res.json(items.map((item) => ({
-//     id: item._id,
-//     slug: item.slug,
-//     titleEn: item.titleEn,
-//     titleHi: item.titleHi,
-//     excerptEn: item.excerptEn,
-//     excerptHi: item.excerptHi,
-//     heroImageUrl: item.heroImageUrl,
-//     publishHome: item.publishHome,
-//     publishedAt: item.publishedAt,
-//     createdAt: item.createdAt
-//   })))
-// }))
 r.get('/news', ah(async (_req, res) => {
+  const items = await NewsItem.find({ published: true })
+    .sort({ publishedAt: -1, createdAt: -1 })
+    .lean()
+  res.json(items.map((item) => ({
+    id: item._id,
+    slug: item.slug,
+    titleEn: item.titleEn,
+    titleHi: item.titleHi,
+    excerptEn: item.excerptEn,
+    excerptHi: item.excerptHi,
+    heroImageUrl: item.heroImageUrl,
+    publishHome: item.publishHome,
+    publishedAt: item.publishedAt,
+    createdAt: item.createdAt
+  })))
+}))
+r.get('/newstop', ah(async (_req, res) => {
   const items = await NewsItem.find({
     published: true,
     publishHome: true

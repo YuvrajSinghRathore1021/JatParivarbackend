@@ -259,7 +259,8 @@ r.get(
         applicant: app.applicantId
           ? {
             id: app.applicantId._id,
-            displayName: app.applicantId.displayName || app.applicantId.name,
+            displayName: app.applicantId.name,
+            name: app.applicantId.name,
             phone: app.applicantId.phone,
             email: app.applicantId.email,
             occupation: app.applicantId.occupation,

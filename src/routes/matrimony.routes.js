@@ -189,7 +189,8 @@ r.get('/interests/user', auth, ah(async (req, res) => {
       updatedAt: item.updatedAt,
       user: {
         id: targetUser._id,
-        displayName: targetUser.displayName || targetUser.name,
+        displayName:  targetUser.name,
+        name:  targetUser.name,
         occupation: targetUser.occupation,
         designation: targetUser.designation,
         education: targetUser?.education,
