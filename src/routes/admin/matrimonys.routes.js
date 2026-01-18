@@ -85,7 +85,7 @@ router.post("/save", requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req,
     id,
     age, gender, maritalStatus, education, occupation,
     state, district, city, village,
-    gotra, photos, visible, height,name,address,parentaladdress
+    gotra, photos, visible, height,name,address,parentaladdress,designation,department
   } = req.body || {};
 
   // Data without userId — admin must not overwrite it
@@ -93,7 +93,7 @@ router.post("/save", requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req,
     age,
     gender,
     maritalStatus,
-    education,
+    education,designation,department,
     occupation,
     state,
     district,

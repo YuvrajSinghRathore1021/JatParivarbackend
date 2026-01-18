@@ -147,6 +147,8 @@ r.post('/register', ah(async (req, res) => {
     },
     contactEmail: form.email,
     education,
+      department:form?.department,
+    designation:form?.designation,
     profession: form.occupation,
     maritalStatus: form.maritalStatus,
     planId: planDoc?._id,

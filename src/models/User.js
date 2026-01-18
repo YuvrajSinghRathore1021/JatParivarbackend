@@ -75,6 +75,8 @@ const userSchema = new mongoose.Schema({
   contactEmail: String,
   alternatePhone: String,
   education: educationSchema,
+    department: String,
+    designation: String,
   profession: String,
   maritalStatus: String,
   planId: { type: mongoose.Types.ObjectId, ref: 'Plan' },

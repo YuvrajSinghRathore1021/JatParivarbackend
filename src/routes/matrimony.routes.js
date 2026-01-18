@@ -33,6 +33,8 @@ r.get('/profiles', ah(async (req, res) => {
       maritalStatus: p.maritalStatus,
 
       education: p.education,
+      department: p?.department,
+      designation: p?.designation,
       occupation: p.occupation,
       occupationAddress: p.occupationAddress,
       currentAddress: p.currentAddress,
@@ -81,10 +83,10 @@ r.get('/:id', auth, ah(async (req, res) => {
 // Upsert my profile
 r.post('/profiles', auth, ah(async (req, res) => {
   const body = (({
-    age, gender, maritalStatus, education, occupation,
+    age, gender, maritalStatus, education, occupation, department, designation,
     currentAddress, occupationAddress, parentalAddress, gotra, photos, visible, height, name
   }) => ({
-    age, gender, maritalStatus, education, occupation,
+    age, gender, maritalStatus, education, occupation, department, designation,
     currentAddress, occupationAddress, parentalAddress, gotra, photos, visible, height, name
   }))(req.body || {})
 
@@ -97,28 +99,61 @@ r.post('/profiles', auth, ah(async (req, res) => {
 }))
 
 // Express interest in a user
+// r.post('/interest/:toUserId', auth, ah(async (req, res) => {
+//   const { toUserId } = req.params
+//   if (!mongoose.Types.ObjectId.isValid(toUserId)) {
+//     return res.status(400).json({ error: 'Invalid user' })
+//   }
+//   if (toUserId === String(req.user._id)) {
+//     return res.status(400).json({ error: 'Cannot express interest in self' })
+//   }
+
+//   const toUser = await User.findById(toUserId).select('_id')
+//   if (!toUser) return res.status(404).json({ error: 'User not found' })
+
+//   const item = await Interest.findOneAndUpdate(
+//     { fromUserId: req.user._id, toUserId },
+//     { $setOnInsert: { status: 'sent' } },
+//     { upsert: true, new: true }
+//   )
+//   res.json(item)
+// }))
 r.post('/interest/:toUserId', auth, ah(async (req, res) => {
-  const { toUserId } = req.params
+  const toUserId = String(req.params.toUserId)
+
   if (!mongoose.Types.ObjectId.isValid(toUserId)) {
     return res.status(400).json({ error: 'Invalid user' })
   }
+
   if (toUserId === String(req.user._id)) {
     return res.status(400).json({ error: 'Cannot express interest in self' })
   }
 
-  const toUser = await User.findById(toUserId).select('_id')
-  if (!toUser) return res.status(404).json({ error: 'User not found' })
-
   const item = await Interest.findOneAndUpdate(
-    { fromUserId: req.user._id, toUserId },
-    { $setOnInsert: { status: 'sent' } },
+    {
+      fromUserId: req.user._id,
+      toUserId: new mongoose.Types.ObjectId(toUserId), // ✅ convert here
+    },
+    {
+      $setOnInsert: { status: 'sent' },
+    },
     { upsert: true, new: true }
   )
-  res.json(item)
+
+  // ✅ convert before sending response
+  res.json({
+    id: String(item._id),
+    fromUserId: String(item.fromUserId),
+    toUserId: String(item.toUserId),
+    status: item.status,
+    createdAt: item.createdAt,
+  })
 }))
 
+
 // My incoming/outgoing interests
-r.get('/interests', auth, ah(async (req, res) => {
+r.get('/interests/user', auth, ah(async (req, res) => {
+
   const [incoming, outgoing] = await Promise.all([
     Interest.find({ toUserId: req.user._id })
       .sort('-createdAt')
@@ -166,6 +201,8 @@ r.get('/interests', auth, ah(async (req, res) => {
         gender: profile.gender,
         maritalStatus: profile.maritalStatus,
         education: profile.education,
+        department: profile?.department,
+        designation: profile?.designation,
         occupation: profile.occupation,
         location: profile.currentAddress,
         gotra: profile.gotra,

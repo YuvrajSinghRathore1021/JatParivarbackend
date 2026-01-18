@@ -41,6 +41,8 @@ export const MatrimonyProfile = mongoose.model('MatrimonyProfile', new mongoose.
   height: String,
   maritalStatus: String,
   education: String,
+    department: String,
+    designation: String,
   occupation: String,
   gotra: { self: String, mother: String, nani: String, dadi: String },
   photos: [String],

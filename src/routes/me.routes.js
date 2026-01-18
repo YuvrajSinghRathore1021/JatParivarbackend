@@ -59,6 +59,8 @@ r.put(
     if (body.maritalStatus !== undefined) user.maritalStatus = body.maritalStatus
     if (body.avatarUrl !== undefined) user.avatarUrl = body.avatarUrl
     if (body.janAadhaarUrl !== undefined) user.janAadhaarUrl = body.janAadhaarUrl
+    if (body.designation !== undefined) user.designation = body.designation
+    if (body.department !== undefined) user.department = body.department
     if (body.education !== undefined) user.education = sanitizeEducation(body.education)
     if (body.gotra !== undefined) user.gotra = sanitizeGotra(body.gotra)
     if (body.occupationAddress !== undefined) user.occupationAddress = sanitizeAddress(body.occupationAddress)
@@ -128,7 +130,7 @@ r.put(
     }
 
     const nextUser = await User.findById(req.user._id).select(
-      'name displayName email phone avatarUrl publicNote occupation company gender maritalStatus occupationAddress parentalAddress currentAddress gotra contactEmail alternatePhone referralCode planTitle planAmount role education janAadhaarUrl dateOfBirth status'
+      'name displayName email phone avatarUrl publicNote occupation company gender maritalStatus occupationAddress parentalAddress currentAddress gotra contactEmail alternatePhone referralCode planTitle planAmount role education designation department janAadhaarUrl dateOfBirth status'
     )
     const nextPerson = await Person.findOne({ userId: req.user._id })
     res.json({ user: nextUser, person: nextPerson })
