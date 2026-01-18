@@ -97,7 +97,9 @@ const serializeUser = (user) => ({
     parentalAddress: user.parentalAddress,
     gotra: user.gotra,
     occupation: user.occupation,
-    company: user.company,
+    designation: user.designation,
+    department: user?.department, education: user?.education,
+
 
     avatarUrl: user.avatarUrl,
     contactEmail: user.contactEmail,

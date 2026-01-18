@@ -80,7 +80,7 @@ app.use(`${CONFIG.API_PREFIX}/uploads`, uploadRoutes)
 app.use(`${CONFIG.API_PREFIX}/matrimony`, matrimonyRoutes)
 app.use(`${CONFIG.API_PREFIX}/jobs`, jobsRoutes)
 app.use(`${CONFIG.API_PREFIX}/institutions`, institutionsRoutes)
-app.use(`${CONFIG.API_PREFIX}/me`, meRoutes)
+app.use(`${CONFIG.API_PREFIX}/me`, meRoutes)    
 app.use(`${CONFIG.API_PREFIX}/geo`, geoRoutes)
 app.use(`${CONFIG.API_PREFIX}/admin`, adminRoutes)
 

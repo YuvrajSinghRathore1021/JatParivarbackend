@@ -15,7 +15,7 @@ import { gauravs } from "../models/GauravPerson.js";
 
 const r = Router()
 
-const PERSON_USER_FIELDS = 'displayName name avatarUrl occupation company publicNote contactEmail phone alternatePhone address planTitle planAmount role status referralCode bussinessurl adimage message currentAddress parentalAddress occupationAddress'
+const PERSON_USER_FIELDS = 'displayName name avatarUrl occupation designation department education publicNote contactEmail phone alternatePhone address planTitle planAmount role status referralCode bussinessurl adimage message currentAddress parentalAddress occupationAddress'
 const ensureRosterForRole = async (personRole) => {
   const normalized = personRole === 'management' ? 'management' : 'founder'
   const userRole = normalized === 'management' ? 'member' : 'founder'
@@ -69,7 +69,9 @@ const serializePublicPerson = (doc) => {
         name: user.name,
         avatarUrl: user.avatarUrl,
         occupation: user.occupation,
-        company: user.company,
+        designation: user.designation,
+        education: user?.education,
+        department: user?.department,
         publicNote: user.publicNote,
         contactEmail: user.contactEmail,
         phone: user.phone,
@@ -123,7 +125,7 @@ r.get('/home/strips', ah(async (_req, res) => {
   const members = await User.find({ role: 'member', status: 'active' })
     .sort('-createdAt')
     .limit(12)
-    .select('name displayName avatarUrl occupation company planTitle planAmount')
+    .select('name displayName avatarUrl occupation designation department education planTitle planAmount')
     .lean()
 
   const achievements = await Achievement.find({ active: true })
@@ -174,7 +176,7 @@ r.get('/ads', ah(async (req, res) => {
 // Members list
 r.get('/members', ah(async (_req, res) => {
   const q = await User.find({ role: 'member', status: 'active' })
-    .select('name displayName avatarUrl occupation company planTitle planAmount')
+    .select('name displayName avatarUrl occupation designation department education planTitle planAmount')
     .limit(200)
     .lean()
   res.json(q)
@@ -651,7 +653,9 @@ const serializeUser = (user) => ({
   parentalAddress: user.parentalAddress,
   gotra: user.gotra,
   occupation: user.occupation,
-  company: user.company,
+  designation: user.designation,
+  education: user?.education,
+  department: user?.department,
 
   avatarUrl: user.avatarUrl,
   contactEmail: user.contactEmail,

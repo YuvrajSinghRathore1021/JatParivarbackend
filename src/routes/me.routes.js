@@ -31,7 +31,7 @@ r.get(
   auth,
   ah(async (req, res) => {
     const user = await User.findById(req.user._id).select(
-      'name displayName email phone avatarUrl publicNote occupation company gender maritalStatus occupationAddress parentalAddress currentAddress gotra contactEmail alternatePhone referralCode planTitle planAmount role education janAadhaarUrl dateOfBirth status'
+      'name displayName email phone avatarUrl publicNote occupation designation department education gender maritalStatus occupationAddress parentalAddress currentAddress gotra contactEmail alternatePhone referralCode planTitle planAmount role education janAadhaarUrl dateOfBirth status'
     )
     const person = await Person.findOne({ userId: req.user._id })
     res.json({ user, person })
@@ -51,7 +51,9 @@ r.put(
     if (body.name !== undefined) user.name = body.name
     if (body.displayName !== undefined) user.displayName = body.displayName
     if (body.occupation !== undefined) user.occupation = body.occupation
-    if (body.company !== undefined) user.company = body.company
+    if (body.designation !== undefined) user.designation = body.designation
+    if (body.education !== undefined) user.education = body.education
+    if (body.department !== undefined) user.department = body.department
     if (body.publicNote !== undefined) user.publicNote = body.publicNote
     if (body.contactEmail !== undefined) user.contactEmail = body.contactEmail
     if (body.alternatePhone !== undefined) user.alternatePhone = body.alternatePhone
@@ -130,7 +132,7 @@ r.put(
     }
 
     const nextUser = await User.findById(req.user._id).select(
-      'name displayName email phone avatarUrl publicNote occupation company gender maritalStatus occupationAddress parentalAddress currentAddress gotra contactEmail alternatePhone referralCode planTitle planAmount role education designation department janAadhaarUrl dateOfBirth status'
+      'name displayName email phone avatarUrl publicNote occupation designation department education gender maritalStatus occupationAddress parentalAddress currentAddress gotra contactEmail alternatePhone referralCode planTitle planAmount role education designation department janAadhaarUrl dateOfBirth status'
     )
     const nextPerson = await Person.findOne({ userId: req.user._id })
     res.json({ user: nextUser, person: nextPerson })

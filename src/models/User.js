@@ -64,7 +64,8 @@ const userSchema = new mongoose.Schema({
   avatarUrl: String,
   publicNote: String,
   occupation: String,
-  company: String,
+  designation: String,
+  department: String,education: String,
   gender: { type: String, enum: ['male', 'female', 'other', 'prefer_not_to_say'], default: 'prefer_not_to_say' },
   dateOfBirth: Date,
   // occupationAddress,currentAddress,parentalAddress

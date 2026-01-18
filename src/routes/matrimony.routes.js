@@ -17,7 +17,7 @@ r.get('/profiles', ah(async (req, res) => {
         { createdAt: -1 }
 
   const profiles = await MatrimonyProfile.find({ visible: true })
-    .populate('userId', 'displayName name gender maritalStatus occupation company phone publicNote avatarUrl height currentAddress occupationAddress parentalAddress')
+    .populate('userId', 'displayName name gender maritalStatus occupation designation department education phone publicNote avatarUrl height currentAddress occupationAddress parentalAddress')
     .sort(order)
     .limit(100)
     .lean()
@@ -47,8 +47,11 @@ r.get('/profiles', ah(async (req, res) => {
       user: u ? {
         id: u._id,
         displayName: u.displayName || u.name,
-        occupation: u.occupation || u.company,
-        company: u.company,
+        occupation: u.occupation,
+        designation: u.designation,
+        education: u?.education,
+        department: u?.department,
+        
         gender: u.gender,
         maritalStatus: u.maritalStatus,
         publicNote: u.publicNote,
@@ -157,12 +160,12 @@ r.get('/interests/user', auth, ah(async (req, res) => {
   const [incoming, outgoing] = await Promise.all([
     Interest.find({ toUserId: req.user._id })
       .sort('-createdAt')
-      .populate('fromUserId', 'displayName name phone occupation company gender maritalStatus avatarUrl publicNote')
+      .populate('fromUserId', 'displayName name phone occupation designation department education gender maritalStatus avatarUrl publicNote')
       .populate('toUserId', '_id')
       .lean(),
     Interest.find({ fromUserId: req.user._id })
       .sort('-createdAt')
-      .populate('toUserId', 'displayName name phone occupation company gender maritalStatus avatarUrl publicNote')
+      .populate('toUserId', 'displayName name phone occupation designation department education gender maritalStatus avatarUrl publicNote')
       .lean(),
   ])
 
@@ -188,7 +191,9 @@ r.get('/interests/user', auth, ah(async (req, res) => {
         id: targetUser._id,
         displayName: targetUser.displayName || targetUser.name,
         occupation: targetUser.occupation,
-        company: targetUser.company,
+        designation: targetUser.designation,
+        education: targetUser?.education,
+        department: targetUser?.department,
         gender: targetUser.gender,
         maritalStatus: targetUser.maritalStatus,
         publicNote: targetUser.publicNote,

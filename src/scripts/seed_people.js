@@ -107,7 +107,9 @@ async function main() {
       avatarUrl: avatar(data.img),
       publicNote: role === 'founder' ? 'Serving as Founder' : 'Management team',
       occupation: data.title,
-      company: 'Jat Parivar',
+      designation: 'Jat Parivar',
+      department: '', education: '',
+
       gender: 'other',
       maritalStatus: 'married',
       address: { state, district: '', city, pin: '' },

@@ -246,7 +246,7 @@ r.get(
 
     const applications = await JobApplication.find({ jobId: job._id })
       .sort('-createdAt')
-      .populate('applicantId', 'displayName name phone email occupation company avatarUrl publicNote')
+      .populate('applicantId', 'displayName name phone email occupation designation department education avatarUrl publicNote')
 
     res.json(
       applications.map((app) => ({
@@ -263,7 +263,8 @@ r.get(
             phone: app.applicantId.phone,
             email: app.applicantId.email,
             occupation: app.applicantId.occupation,
-            company: app.applicantId.company,
+            designation: app.applicantId.designation,
+            department: app.applicantId?.department, education: app.applicantId?.education,
             avatarUrl: app.applicantId.avatarUrl,
             publicNote: app.applicantId.publicNote,
           }
