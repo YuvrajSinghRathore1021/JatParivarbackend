@@ -2,6 +2,7 @@
 import mongoose from 'mongoose'
 import bcrypt from 'bcryptjs'
 import { ensurePersonForUser, mapUserRoleToPersonRole, removePersonForUser } from '../utils/personSync.js'
+import { generateUniqueReferralCode, normalizeReferralCode } from '../utils/referral.js'
 
 
 const occupationAddressSchema = new mongoose.Schema({
@@ -56,7 +57,7 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ['admin', 'founder', 'member', 'sadharan'], default: 'sadharan' },
   roles: { type: [String], default: [] },
   sessionVersion: { type: Number, default: 1 },
-  referralCode: { type: String, unique: true },
+  referralCode: { type: String, unique: true, sparse: true, trim: true, uppercase: true },
   avatarUrl: String,
   publicNote: String,
   occupation: String,
@@ -92,6 +93,15 @@ const userSchema = new mongoose.Schema({
 userSchema.methods.compare = function (pw) {
   return bcrypt.compare(pw, this.passwordHash)
 }
+
+userSchema.pre('validate', async function () {
+  if (this.referralCode) {
+    this.referralCode = normalizeReferralCode(this.referralCode)
+  }
+  if (this.isNew && !this.referralCode) {
+    this.referralCode = await generateUniqueReferralCode(this.constructor)
+  }
+})
 
 const syncPersonFromUser = async (doc) => {
   if (!doc) return

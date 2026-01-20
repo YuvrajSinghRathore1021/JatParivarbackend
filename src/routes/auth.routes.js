@@ -1,7 +1,6 @@
 // backend/src/routes/auth.routes.js
 import { Router } from 'express'
 import bcrypt from 'bcryptjs'
-import { customAlphabet } from 'nanoid'
 import { User } from '../models/User.js'
 import { Plan } from '../models/Plan.js'
 import { Membership } from '../models/Membership.js'
@@ -9,20 +8,9 @@ import { ah } from '../utils/asyncHandler.js'
 import { signFor } from '../utils/jwt.js'
 import { CONFIG, cookieOpts } from '../config/env.js'
 import { ensurePersonForUser } from '../utils/personSync.js'
+import { generateUniqueReferralCode, isValidReferralCodeFormat, normalizeReferralCode } from '../utils/referral.js'
 
 const r = Router()
-
-const REFERRAL_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-const makeReferral = customAlphabet(REFERRAL_ALPHABET, 6)
-
-const generateReferral = async () => {
-  for (let i = 0; i < 10; i += 1) {
-    const code = makeReferral()
-    const taken = await User.exists({ referralCode: code })
-    if (!taken) return code
-  }
-  throw new Error('Could not generate referral code')
-}
 
 r.post('/check-phone', ah(async (req, res) => {
   const { phone } = req.body || {}
@@ -41,10 +29,10 @@ r.post('/check-referral', ah(async (req, res) => {
   }
 
   // 2️⃣ Normalize (important)
-  const refCode = String(code).trim().toUpperCase()
+  const refCode = normalizeReferralCode(code)
 
   // 3️⃣ Format validation
-  if (!/^[A-Z0-9]{6}$/.test(refCode)) {
+  if (!isValidReferralCodeFormat(refCode)) {
     return res.status(400).json({ error: 'Invalid referral code format' })
   }
 
@@ -90,23 +78,25 @@ r.post('/register', ah(async (req, res) => {
     sadharan: { role: 'sadharan', amount: 2100, title: 'Sadharan' }
   }[planCode]
 
-  const normalizedRef = typeof refCode === 'string' ? refCode.trim().toUpperCase() : null
-  if (normalizedRef && !/^[A-Z0-9]{6}$/.test(normalizedRef)) {
+  const normalizedRef = normalizeReferralCode(refCode)
+  if (!normalizedRef) {
+    return res.status(400).json({ error: 'Referral code is required' })
+  }
+  if (!isValidReferralCodeFormat(normalizedRef)) {
     return res.status(400).json({ error: 'Invalid referral code' })
   }
-
-  if (normalizedRef) {
-    const refExists = await User.exists({ referralCode: normalizedRef })
-    if (!refExists) {
-      return res.status(404).json({ error: 'Referral code not found' })
-    }
+  const refExists = await User.exists({ referralCode: normalizedRef })
+  if (!refExists) {
+    return res.status(404).json({ error: 'Referral code not found' })
   }
 
   const passwordHash = await bcrypt.hash(form.password, 10)
 
-  const referralCode = await generateReferral()
+  const referralCode = await generateUniqueReferralCode(User)
   const dateOfBirth = form.dob ? new Date(form.dob) : undefined
-  const education = form.education ? { highestQualification: form.education } : undefined
+  const education = typeof form.education === 'string'
+    ? form.education
+    : form?.education?.highestQualification || undefined
 
   const janAadhaarUrlValue =
     [
@@ -129,7 +119,8 @@ r.post('/register', ah(async (req, res) => {
     avatarUrl: profilePhotoUrl,
     occupation: form.occupation,
     designation: form.designation,
-    department: form?.department, education: form?.education,
+    department: form?.department,
+    education,
     gender: form.gender,
     dateOfBirth: Number.isNaN(dateOfBirth?.getTime?.()) ? undefined : dateOfBirth,
     address: {
@@ -147,9 +138,6 @@ r.post('/register', ah(async (req, res) => {
       nani: gotra.nani
     },
     contactEmail: form.email,
-    education,
-    department: form?.department,
-    designation: form?.designation,
     profession: form.occupation,
     maritalStatus: form.maritalStatus,
     planId: planDoc?._id,
@@ -185,6 +173,10 @@ r.post('/login', ah(async (req, res) => {
   if (!u) return res.status(401).json({ error: 'Invalid' })
   const ok = await u.compare(password)
   if (!ok) return res.status(401).json({ error: 'Invalid' })
+  if (!u.referralCode) {
+    u.referralCode = await generateUniqueReferralCode(User)
+    await u.save()
+  }
   const token = signFor(u)
   res.cookie('token', token, cookieOpts)
   res.json({ ok: true })

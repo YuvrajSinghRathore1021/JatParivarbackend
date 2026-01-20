@@ -127,11 +127,19 @@ router.post(
   ah(async (req, res) => {
     const { id, name, title, visible, data, photo} = req.body;
 
+    const safeData = {
+      timeline: data?.timeline || "PRESENT",
+      category: data?.category || "games",
+      biography: data?.biography || "",
+      achievements: Array.isArray(data?.achievements) ? data.achievements.filter(Boolean) : [],
+      gallery: Array.isArray(data?.gallery) ? data.gallery : []
+    }
+
     const dataNew = {
       name,
       title,
       visible,
-      data,
+      data: safeData,
       photo
     };
 

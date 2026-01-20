@@ -157,4 +157,19 @@ r.patch(
   })
 )
 
+r.delete(
+  '/:id',
+  auth,
+  ah(async (req, res) => {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid institution id' })
+    }
+    const deleted = await Institution.findOneAndDelete({ _id: req.params.id, userId: req.user._id })
+    if (!deleted) {
+      return res.status(404).json({ error: 'Listing not found' })
+    }
+    res.json({ success: true })
+  })
+)
+
 export default r

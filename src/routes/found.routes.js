@@ -85,6 +85,8 @@ const serializeUser = (user) => ({
     name: user.name,
     displayName: user.displayName,
     email: user.email,
+    phone: user.phone,
+    alternatePhone: user.alternatePhone,
 
 
 

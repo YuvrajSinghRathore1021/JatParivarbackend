@@ -17,6 +17,9 @@ const personFields = [
   'bioEn',
   'bioHi',
   'socials',
+  'department',
+  'education',
+  'occupation',
   'visible',
   'order',
   // 🔥 ADD THESE
@@ -138,6 +141,14 @@ function getUserFallback(user, field) {
       return user.avatarUrl || undefined
     case 'place':
       return user.address?.city || undefined
+    case 'designation':
+      return user.designation || undefined
+    case 'department':
+      return user.department || undefined
+    case 'education':
+      return user.education || undefined
+    case 'occupation':
+      return user.occupation || undefined
     case 'currentAddress':
       return user.currentAddress || undefined
 

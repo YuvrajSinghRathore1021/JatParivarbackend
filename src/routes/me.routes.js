@@ -52,7 +52,6 @@ r.put(
     if (body.displayName !== undefined) user.displayName = body.displayName
     if (body.occupation !== undefined) user.occupation = body.occupation
     if (body.designation !== undefined) user.designation = body.designation
-    if (body.education !== undefined) user.education = body.education
     if (body.department !== undefined) user.department = body.department
     if (body.publicNote !== undefined) user.publicNote = body.publicNote
     if (body.contactEmail !== undefined) user.contactEmail = body.contactEmail
@@ -63,7 +62,11 @@ r.put(
     if (body.janAadhaarUrl !== undefined) user.janAadhaarUrl = body.janAadhaarUrl
     if (body.designation !== undefined) user.designation = body.designation
     if (body.department !== undefined) user.department = body.department
-    if (body.education !== undefined) user.education = sanitizeEducation(body.education)
+    if (body.education !== undefined) {
+      user.education = typeof body.education === 'string'
+        ? body.education
+        : body.education?.highestQualification || ''
+    }
     if (body.gotra !== undefined) user.gotra = sanitizeGotra(body.gotra)
     if (body.occupationAddress !== undefined) user.occupationAddress = sanitizeAddress(body.occupationAddress)
     if (body.parentalAddress !== undefined) user.parentalAddress = sanitizeAddress(body.parentalAddress)
@@ -101,6 +104,10 @@ r.put(
         photo: user.avatarUrl,
         place: user.currentAddress?.city,
         publicNote: user.publicNote,
+        designation: user.designation,
+        department: user.department,
+        education: user.education,
+        occupation: user.occupation,
         // ✅ MATCH PERSON SCHEMA
         currentAddress: user.currentAddress,
         parentalAddress: user.parentalAddress,
@@ -144,15 +151,15 @@ r.put(
   auth,
   ah(async (req, res) => {
     const { avatarUrl } = req.body || {}
-    if (!avatarUrl || typeof avatarUrl !== 'string') {
-      return res.status(400).json({ error: 'avatarUrl is required' })
+    if (avatarUrl !== '' && typeof avatarUrl !== 'string') {
+      return res.status(400).json({ error: 'avatarUrl must be a string' })
     }
 
     const user = await User.findById(req.user._id).select('avatarUrl displayName name phone planTitle planAmount role occupationAddress parentalAddress currentAddress publicNote')
     if (!user) return res.status(404).json({ error: 'User not found' })
 
     const previous = user.avatarUrl
-    user.avatarUrl = avatarUrl
+    user.avatarUrl = avatarUrl || ''
     await user.save()
 
     await ensurePersonForUser(user, {
@@ -231,15 +238,6 @@ const sanitizeAddress = (value) => {
   if (value.city !== undefined) result.city = value.city
   if (value.cityCode !== undefined) result.cityCode = value.cityCode
   if (value.village !== undefined) result.village = value.village
-  return Object.keys(result).length ? result : undefined
-}
-
-const sanitizeEducation = (value) => {
-  if (!value || typeof value !== 'object') return undefined
-  const result = {}
-  if (value.highestQualification !== undefined) result.highestQualification = value.highestQualification
-  if (value.institution !== undefined) result.institution = value.institution
-  if (value.year !== undefined) result.year = value.year
   return Object.keys(result).length ? result : undefined
 }
 

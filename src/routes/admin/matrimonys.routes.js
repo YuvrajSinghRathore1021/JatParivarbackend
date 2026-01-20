@@ -3,9 +3,12 @@
 
 
 import { Router } from "express";
+import mongoose from "mongoose";
 import { MatrimonyProfile } from "../../models/MatrimonyProfile.js";
 import { requireRole } from "../../middleware/adminAuth.js";
 import { ah } from "../../utils/asyncHandler.js";
+import { User } from "../../models/User.js";
+import { normalizeReferralCode } from "../../utils/referral.js";
 
 const router = Router();
 
@@ -84,16 +87,37 @@ router.post("/save", requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req,
   const {
     id,
     age, gender, maritalStatus, education, occupation,
-    state, district, city, village,
-    gotra, photos, visible, height,name,address,parentaladdress,designation,department
+    gotra, photos, visible, height, name, address, parentaladdress, designation, department,
+    userId,
+    referralCode,
+    occupationAddress = {},
+    currentAddress = {},
+    parentalAddress = {},
   } = req.body || {};
+
+  let linkedUserId = null;
+  if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+    const userExists = await User.exists({ _id: userId });
+    if (!userExists) {
+      return res.status(400).json({ error: "User not found for provided userId" });
+    }
+    linkedUserId = userId;
+  } else if (referralCode) {
+    const code = normalizeReferralCode(referralCode);
+    if (!code) return res.status(400).json({ error: "Invalid referral code" });
+    const user = await User.findOne({ referralCode: code }).select('_id');
+    if (!user) {
+      return res.status(400).json({ error: "User not found for provided referral code" });
+    }
+    linkedUserId = user._id;
+  }
 
   // Data without userId — admin must not overwrite it
   const data = {
     age,
     gender,
     maritalStatus,
-    education,designation,department,
+    education, designation, department,
     occupation,
     state,
     district,
@@ -103,7 +127,11 @@ router.post("/save", requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req,
     gotra,
     photos,
     visible,
-    name,address,parentaladdress
+    name, address, parentaladdress,
+    occupationAddress,
+    currentAddress,
+    parentalAddress,
+    ...(linkedUserId ? { userId: linkedUserId } : {})
   };
 
   let profile;
@@ -114,7 +142,7 @@ router.post("/save", requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req,
   if (id && id !='save') {
     profile = await MatrimonyProfile.findByIdAndUpdate(
       id,
-      { $set: data },    // DO NOT update userId
+      { $set: data },    // allow updating userId when provided
       { new: true, upsert: false }
     );
 
@@ -129,7 +157,7 @@ router.post("/save", requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req,
   else {
     profile = await MatrimonyProfile.create({
       ...data,
-      userId: null      // keep user id blank
+      userId: linkedUserId      // optionally link an existing user
     });
   }
 

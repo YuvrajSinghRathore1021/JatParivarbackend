@@ -175,6 +175,22 @@ r.patch(
   })
 )
 
+r.delete(
+  '/:id',
+  auth,
+  ah(async (req, res) => {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'Invalid job id' })
+    }
+    const deleted = await JobPost.findOneAndDelete({ _id: req.params.id, userId: req.user._id })
+    if (!deleted) {
+      return res.status(404).json({ error: 'Job not found' })
+    }
+    await JobApplication.deleteMany({ jobId: deleted._id })
+    res.json({ success: true })
+  })
+)
+
 r.post(
   '/:id/applications',
   auth,

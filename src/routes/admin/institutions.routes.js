@@ -3,6 +3,9 @@ import { Institution } from '../../models/Institution.js'
 import { requireRole } from '../../middleware/adminAuth.js'
 import { ah } from '../../utils/asyncHandler.js'
 import { logAudit } from '../../utils/audit.js'
+import mongoose from 'mongoose'
+import { User } from '../../models/User.js'
+import { normalizeReferralCode } from '../../utils/referral.js'
 
 const router = Router()
 
@@ -53,7 +56,20 @@ router.post('/', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req, res
   if (!body.titleEn || !body.kind) {
     return res.status(400).json({ error: 'Title and kind required' })
   }
-  const doc = await Institution.create({ ...body, approved: body.approved ?? true })
+  let linkedUserId = null
+  if (body.userId && mongoose.Types.ObjectId.isValid(body.userId)) {
+    const exists = await User.exists({ _id: body.userId })
+    if (!exists) return res.status(400).json({ error: 'User not found for provided userId' })
+    linkedUserId = body.userId
+  } else if (body.referralCode) {
+    const code = normalizeReferralCode(body.referralCode)
+    if (!code) return res.status(400).json({ error: 'Invalid referral code' })
+    const user = await User.findOne({ referralCode: code }).select('_id')
+    if (!user) return res.status(400).json({ error: 'User not found for provided referral code' })
+    linkedUserId = user._id
+  }
+
+  const doc = await Institution.create({ ...body, approved: body.approved ?? true, userId: linkedUserId || body.userId || null })
   await logAudit({
     admin: req.admin,
     entityType: 'institution',
@@ -69,7 +85,25 @@ router.patch('/:id', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req,
   const doc = await Institution.findById(req.params.id)
   if (!doc) return res.status(404).json({ error: 'Not found' })
   const before = serialize(doc)
-  Object.assign(doc, req.body)
+  const body = req.body || {}
+
+  if (body.userId || body.referralCode) {
+    let linkedUserId = null
+    if (body.userId && mongoose.Types.ObjectId.isValid(body.userId)) {
+      const exists = await User.exists({ _id: body.userId })
+      if (!exists) return res.status(400).json({ error: 'User not found for provided userId' })
+      linkedUserId = body.userId
+    } else if (body.referralCode) {
+      const code = normalizeReferralCode(body.referralCode)
+      if (!code) return res.status(400).json({ error: 'Invalid referral code' })
+      const user = await User.findOne({ referralCode: code }).select('_id')
+      if (!user) return res.status(400).json({ error: 'User not found for provided referral code' })
+      linkedUserId = user._id
+    }
+    body.userId = linkedUserId
+  }
+
+  Object.assign(doc, body)
   await doc.save()
   await logAudit({
     admin: req.admin,

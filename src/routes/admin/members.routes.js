@@ -1,16 +1,21 @@
 // backend/src/routes/admin/members.routes.js
 import { Router } from 'express'
 import bcrypt from 'bcryptjs'
-import { customAlphabet } from 'nanoid'
 import { User } from '../../models/User.js'
 import { Payment } from '../../models/Payment.js'
 import { Person } from '../../models/Person.js'
 import { Plan } from '../../models/Plan.js'
 import { Membership } from '../../models/Membership.js'
+import { JobPost } from '../../models/JobPost.js'
+import { JobApplication } from '../../models/JobApplication.js'
+import { Institution } from '../../models/Institution.js'
+import { MatrimonyProfile } from '../../models/MatrimonyProfile.js'
+import { Interest } from '../../models/Interest.js'
 import { requireRole } from '../../middleware/adminAuth.js'
 import { ah } from '../../utils/asyncHandler.js'
 import { logAudit } from '../../utils/audit.js'
 import { ensurePersonForUser, mapUserRoleToPersonRole } from '../../utils/personSync.js'
+import { generateUniqueReferralCode } from '../../utils/referral.js'
 
 const router = Router()
 
@@ -174,7 +179,7 @@ router.post('/', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req, res
     return res.status(400).json({ error: 'Phone already in use' })
   }
 
-  const referralCode = await generateReferral()
+  const referralCode = await generateUniqueReferralCode(User)
   const memberRole = ALLOWED_MEMBER_ROLES.has(body.role) ? body.role : 'sadharan'
   const plan = memberRole ? await Plan.findOne({ code: memberRole }) : null
 
@@ -217,7 +222,11 @@ router.post('/', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req, res
     name: userPayload.displayName || userPayload.name,
     photo: userPayload.avatarUrl,
     place: userPayload.currentAddress?.city,
-    publicNote: userPayload.publicNote
+    publicNote: userPayload.publicNote,
+    designation: userPayload.designation,
+    department: userPayload.department,
+    education: userPayload.education,
+    occupation: userPayload.occupation,
   })
 
   await logAudit({
@@ -308,6 +317,10 @@ router.patch('/:id', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN', 'FINANCE_ADMIN'
     photo: user.avatarUrl,
     place: user.currentAddress?.city,
     publicNote: user.publicNote,
+    designation: user.designation,
+    department: user.department,
+    education: user.education,
+    occupation: user.occupation,
     // ✅ MATCH PERSON SCHEMA
     currentAddress: user.currentAddress,
     parentalAddress: user.parentalAddress,
@@ -344,6 +357,10 @@ router.patch('/:id/status', requireRole('SUPER_ADMIN', 'FINANCE_ADMIN'), ah(asyn
     photo: user.avatarUrl,
     place: user.currentAddress?.city,
     publicNote: user.publicNote,
+    designation: user.designation,
+    department: user.department,
+    education: user.education,
+    occupation: user.occupation,
     // ✅ MATCH PERSON SCHEMA
     currentAddress: user.currentAddress,
     parentalAddress: user.parentalAddress,
@@ -368,9 +385,19 @@ router.delete('/:id', requireRole('SUPER_ADMIN'), ah(async (req, res) => {
   if (!user) return res.status(404).json({ error: 'Member not found' })
 
   const before = serializeUser(user)
+  const jobDocs = await JobPost.find({ userId: user._id }).select('_id').lean()
+  const jobIds = jobDocs.map((d) => d._id)
+  const jobAppFilter = jobIds.length
+    ? { $or: [{ applicantId: user._id }, { jobId: { $in: jobIds } }] }
+    : { applicantId: user._id }
   await Promise.all([
     Person.deleteOne({ userId: user._id }),
     Membership.deleteMany({ userId: user._id }),
+    JobApplication.deleteMany(jobAppFilter),
+    JobPost.deleteMany({ userId: user._id }),
+    Institution.deleteMany({ userId: user._id }),
+    MatrimonyProfile.deleteMany({ userId: user._id }),
+    Interest.deleteMany({ $or: [{ fromUserId: user._id }, { toUserId: user._id }] }),
     user.deleteOne()
   ])
 
@@ -436,19 +463,6 @@ const cleanObject = (obj) => {
     }
   })
   return result
-}
-
-const REFERRAL_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-const makeReferral = customAlphabet(REFERRAL_ALPHABET, 6)
-
-const generateReferral = async () => {
-  let code
-  let exists = true
-  while (exists) {
-    code = makeReferral()
-    exists = await User.exists({ referralCode: code })
-  }
-  return code
 }
 
 export default router

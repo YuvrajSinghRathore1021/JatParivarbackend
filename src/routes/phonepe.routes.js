@@ -11,6 +11,7 @@ import bcrypt from 'bcryptjs'
 import { Membership } from '../models/Membership.js'
 import { signFor } from '../utils/jwt.js'
 import { CONFIG } from '../config/env.js'
+import { generateUniqueReferralCode, isValidReferralCodeFormat, normalizeReferralCode } from '../utils/referral.js'
 
 const r = Router()
 
@@ -54,12 +55,28 @@ const callbackUrl = CONFIG.PHONEPE.CALLBACK_URL || `${CONFIG.BASE_URL}${CONFIG.A
 
 
 r.post('/create', ah(async (req, res) => {
+  const body = req.body && typeof req.body === 'object' ? req.body : {}
+  const { phone, refCode, form, addr, gotra, janAadharUrl, profilePhotoUrl, plan } = body
 
-  const { phone = 7976929440, refCode = "", form = "", addr = "", gotra = "", janAadharUrl = "", profilePhotoUrl = "", plan = "" } = req.body;
+  if (!phone) {
+    return res.status(400).json({ error: 'Phone is required' })
+  }
+
+  const normalizedRef = normalizeReferralCode(refCode)
+  if (!normalizedRef) {
+    return res.status(400).json({ error: 'Referral code is required' })
+  }
+  if (!isValidReferralCodeFormat(normalizedRef)) {
+    return res.status(400).json({ error: 'Invalid referral code format' })
+  }
+  const refExists = await User.exists({ referralCode: normalizedRef })
+  if (!refExists) {
+    return res.status(404).json({ error: 'Referral code not found' })
+  }
 
   // 1. Create pre-signup entry
   const pre = await PreSignup.create({
-    phone, refCode, form, addr, gotra, janAadharUrl, profilePhotoUrl, plan
+    phone, refCode: normalizedRef, form, addr, gotra, janAadharUrl, profilePhotoUrl, plan
   });
 
   // 2. Amount in paisa
@@ -198,10 +215,18 @@ r.post('/webhook', ah(async (req, res) => {
       const passwordHash = await bcrypt.hash(pre.form.password, 10)
       // Basic referral check
       const role = pre.plan === 'founder' ? 'founder' : pre.plan === 'member' ? 'member' : 'sadharan'
-      const referralCode = (Math.floor(100000 + Math.random() * 900000)).toString()
+      const referralCode = await generateUniqueReferralCode(User)
+      const normalizedRef = normalizeReferralCode(pre.refCode)
       const user = await User.create({
-        name: pre.form.name, email: pre.form.email, phone: pre.phone, passwordHash, role, referralCode,
-        avatarUrl: pre.profilePhotoUrl, publicNote: ''
+        name: pre.form.name,
+        email: pre.form.email,
+        phone: pre.phone,
+        passwordHash,
+        role,
+        referralCode,
+        avatarUrl: pre.profilePhotoUrl,
+        publicNote: '',
+        ...(normalizedRef ? { customFields: { referredBy: normalizedRef } } : {})
       })
       await Membership.create({ userId: user._id, plan: pre.plan, status: 'active', startedAt: new Date() })
     }

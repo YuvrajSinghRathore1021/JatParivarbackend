@@ -16,7 +16,7 @@ const socialSchema = new mongoose.Schema({
 }, { _id: false })
 
 const personSchema = new mongoose.Schema({
-  userId: { type: mongoose.Types.ObjectId, ref: 'User', index: true, sparse: true },
+  userId: { type: mongoose.Types.ObjectId, ref: 'User' },
   role: { type: String, enum: ['founder', 'management'] },
   name: String,
   title: String,

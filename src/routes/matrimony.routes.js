@@ -101,6 +101,12 @@ r.post('/profiles', auth, ah(async (req, res) => {
   res.json(up)
 }))
 
+// Delete my profile
+r.delete('/profiles', auth, ah(async (req, res) => {
+  await MatrimonyProfile.findOneAndDelete({ userId: req.user._id })
+  res.json({ success: true })
+}))
+
 // Express interest in a user
 // r.post('/interest/:toUserId', auth, ah(async (req, res) => {
 //   const { toUserId } = req.params
