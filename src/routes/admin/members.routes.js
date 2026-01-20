@@ -59,6 +59,9 @@ const serializePerson = (person) => person ? ({
   name: person.name,
   title: person.title,
   designation: person.designation,
+  education: person.education,
+  department: person.department,
+  occupation: person.occupation,
   photo: person.photo,
   bannerUrl: person.bannerUrl,
   place: person.place,
@@ -199,7 +202,7 @@ router.post('/', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req, res
     planAmount: plan?.price || body.planAmount,
     referralCode,
     gotra: sanitizeGotra(body.gotra),
-    education: sanitizeEducation(body.education),
+    education: body?.education,
     department: body?.department,
     dateOfBirth: parseDate(body.dateOfBirth),
     passwordHash: await bcrypt.hash(password, 10),
@@ -268,7 +271,7 @@ router.patch('/:id', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN', 'FINANCE_ADMIN'
     occupationAddress: body.occupationAddress,
     currentAddress: body.currentAddress,
     parentalAddress: body.parentalAddress,
-    education: sanitizeEducation(body.education),
+    education: body.education,
     department: body?.department,
     dateOfBirth: parseDate(body.dateOfBirth)
   })

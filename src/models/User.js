@@ -45,11 +45,7 @@ const gotraSchema = new mongoose.Schema({
   nani: String
 }, { _id: false })
 
-const educationSchema = new mongoose.Schema({
-  highestQualification: String,
-  institution: String,
-  year: String
-}, { _id: false })
+
 
 const userSchema = new mongoose.Schema({
   name: String,
@@ -65,7 +61,8 @@ const userSchema = new mongoose.Schema({
   publicNote: String,
   occupation: String,
   designation: String,
-  department: String,education: String,
+  department: String,
+ 
   gender: { type: String, enum: ['male', 'female', 'other', 'prefer_not_to_say'], default: 'prefer_not_to_say' },
   dateOfBirth: Date,
   // occupationAddress,currentAddress,parentalAddress
@@ -75,7 +72,7 @@ const userSchema = new mongoose.Schema({
   gotra: gotraSchema,
   contactEmail: String,
   alternatePhone: String,
-  education: educationSchema,
+  education: String,
     department: String,
     designation: String,
   profession: String,

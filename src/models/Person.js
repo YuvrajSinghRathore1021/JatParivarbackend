@@ -21,6 +21,8 @@ const personSchema = new mongoose.Schema({
   name: String,
   title: String,
   designation: String,
+    department: String,
+  education: String,
   photo: String,
   bannerUrl: String,
   bussinessurl: String,
