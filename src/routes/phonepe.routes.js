@@ -234,8 +234,8 @@ r.post('/webhook', ah(async (req, res) => {
   res.json({ ok: true })
 }))
 
-r.get('/callback', ah(async (req, res) => {
-  const { pre: preId } = req.query
+const callbackHandler = ah(async (req, res) => {
+  const preId = req.query.pre
   const pre = await PreSignup.findById(preId)
   const pay = await Payment.findOne({ preSignupId: preId }).sort({ createdAt: -1 })
   const firstFront = CONFIG.FRONTEND_URLS[0] || 'http://localhost:5173'
@@ -249,6 +249,9 @@ r.get('/callback', ah(async (req, res) => {
     }
   }
   return res.redirect(`${firstFront}/hi/register?status=${pay?.status || 'pending'}`)
-}))
+})
+
+r.get('/callback', callbackHandler)
+r.post('/callback', callbackHandler)
 
 export default r

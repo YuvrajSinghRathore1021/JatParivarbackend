@@ -41,13 +41,22 @@ app.use(
 //   },
 //   credentials: true
 // }))
-
+// Global CORS (reflects request origin, allows creds, handles preflight early)
+app.use((req, res, next) => {
+  const origin = req.headers.origin
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin)
+  }
+  res.header('Access-Control-Allow-Credentials', 'true')
+  res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS')
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization')
+  if (req.method === 'OPTIONS') return res.sendStatus(204)
+  next()
+})
 
 app.use(cors({
-  origin: (origin, callback) => {
-    return callback(null, true); // allow all origins
-  },
-  credentials: true
+  origin: (origin, callback) => callback(null, true),
+  credentials: true,
 }));
 
 // ✅ MUST be above static route
@@ -86,7 +95,12 @@ app.use(`${CONFIG.API_PREFIX}/admin`, adminRoutes)
 
 app.use((err, req, res, _next) => {
   console.error(err)
-  res.status(err.status || 500).json({ error: err.message || 'Server error' })
+  const status =
+    err.status ||
+    (err.name === 'MulterError' ? 400 : undefined) ||
+    (err.message === 'Invalid file type' ? 400 : undefined) ||
+    500
+  res.status(status).json({ error: err.message || 'Server error' })
 })
 
 app.listen(CONFIG.PORT, () => {

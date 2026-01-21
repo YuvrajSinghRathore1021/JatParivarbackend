@@ -256,6 +256,7 @@ r.get(
       locationVillage: job.locationVillage,
       locationCity: job.locationCity,
       locationCityCode: job.locationCityCode,
+      contactPhone: job.contactPhone,
       type: job.type,
       salaryRange: job.salaryRange,
       createdAt: job.createdAt,
