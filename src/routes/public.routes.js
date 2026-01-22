@@ -242,14 +242,35 @@ r.get('/user/:id', ah(async (req, res) => {
   }
 
   // 1️⃣ Get user
-  const user = await User.findById(id).lean()
+  const user = await User.findById(id)
+    .select('name displayName avatarUrl occupation designation department education publicNote gender maritalStatus role status currentAddress occupationAddress parentalAddress')
+    .lean()
 
   if (!user) {
     return res.status(404).json({ error: 'User not found' })
   }
 
+  const stripAddress = (addr) => {
+    if (!addr) return null
+    return {
+      state: addr.state || null,
+      stateCode: addr.stateCode || null,
+      district: addr.district || null,
+      districtCode: addr.districtCode || null,
+      city: addr.city || null,
+      cityCode: addr.cityCode || null,
+    }
+  }
+
   res.json({
-    person: user || null
+    person: {
+      ...user,
+      id: user._id,
+      _id: user._id,
+      currentAddress: stripAddress(user.currentAddress),
+      occupationAddress: stripAddress(user.occupationAddress),
+      parentalAddress: stripAddress(user.parentalAddress),
+    } || null
   })
 }))
 
