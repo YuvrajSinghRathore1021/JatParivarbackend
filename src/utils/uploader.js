@@ -26,7 +26,8 @@ const isAllowedImage = (mimetype = '') => {
 
 export const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 },
+  // limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 1 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (!isAllowedImage(file.mimetype) && !ALLOWED_DOC_MIME.has(file.mimetype)) {
       return cb(new Error('Invalid file type'))
