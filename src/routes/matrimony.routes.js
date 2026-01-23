@@ -80,6 +80,12 @@ r.get('/:id', auth, ah(async (req, res) => {
     return res.status(404).json({ error: 'Profile not found' });
   }
 
+  // Backward/compat: some older matrimony profiles relied on the linked user's occupation.
+  if (!profile.occupation && profile.userId) {
+    const u = await User.findById(profile.userId).select('occupation').lean()
+    if (u?.occupation) profile.occupation = u.occupation
+  }
+
   res.json(profile);
 }))
 

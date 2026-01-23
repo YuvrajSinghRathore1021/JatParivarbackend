@@ -20,15 +20,32 @@ const router = Router();
 router.get("/", requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req, res) => {
   const { search = "" } = req.query;
 
-  const filter = search
+  const re = search ? new RegExp(search, "i") : null;
+  const filter = re
     ? {
-      $or: [
-        { titleEn: new RegExp(search, "i") },
-        { titleHi: new RegExp(search, "i") },
-        { city: new RegExp(search, "i") },
-        { state: new RegExp(search, "i") }
-      ]
-    }
+        $or: [
+          { name: re },
+          { occupation: re },
+          { designation: re },
+          { department: re },
+          { education: re },
+
+          { "currentAddress.village": re },
+          { "currentAddress.city": re },
+          { "currentAddress.district": re },
+          { "currentAddress.state": re },
+
+          { "occupationAddress.village": re },
+          { "occupationAddress.city": re },
+          { "occupationAddress.district": re },
+          { "occupationAddress.state": re },
+
+          { "parentalAddress.village": re },
+          { "parentalAddress.city": re },
+          { "parentalAddress.district": re },
+          { "parentalAddress.state": re },
+        ],
+      }
     : {};
 
   const list = await MatrimonyProfile.find(filter)
@@ -93,6 +110,11 @@ router.post("/save", requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req,
     occupationAddress = {},
     currentAddress = {},
     parentalAddress = {},
+    // Backward-compatible flat fields (older admin UI)
+    state,
+    district,
+    city,
+    village,
   } = req.body || {};
 
   let linkedUserId = null;
@@ -119,18 +141,24 @@ router.post("/save", requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req,
     maritalStatus,
     education, designation, department,
     occupation,
-    state,
-    district,
-    city,
-    village,
     height,
     gotra,
     photos,
     visible,
     name, address, parentaladdress,
-    occupationAddress,
-    currentAddress,
-    parentalAddress,
+    occupationAddress: {
+      ...occupationAddress,
+    },
+    currentAddress: {
+      ...currentAddress,
+      ...(state ? { state } : {}),
+      ...(district ? { district } : {}),
+      ...(city ? { city } : {}),
+      ...(village ? { village } : {}),
+    },
+    parentalAddress: {
+      ...parentalAddress,
+    },
     ...(linkedUserId ? { userId: linkedUserId } : {})
   };
 
