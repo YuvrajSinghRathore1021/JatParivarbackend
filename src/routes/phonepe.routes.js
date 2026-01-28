@@ -81,23 +81,19 @@ r.post('/create', ah(async (req, res) => {
 
   // 2. Amount in paisa
   // const amount = plan === 'founder' ? 10100000 : plan === 'member' ? 5000000 : 210000;
-  const amount = 1;
+  const amount = 100;
 
   const merchantTransactionId = nanoid(12);
 
   // 3. PhonePe payment payload
 
-  console.log("process.env.PHONEPE_MERCHANT_ID=", process.env.PHONEPE_MERCHANT_ID);
-  console.log("process.env.PHONEPE_SALT_KEY=", process.env.PHONEPE_SALT_KEY);
-  console.log("process.env.PHONEPE_BASE_URL=", process.env.PHONEPE_BASE_URL);
-  console.log("process.env.PHONEPE_SALT_INDEX=", process.env.PHONEPE_SALT_INDEX);
-  console.log("redirectUrl=", redirectUrl);
-  console.log("callbackUrl=", callbackUrl);
-  // // out put 
-  //   process.env.PHONEPE_MERCHANT_ID= M222KPO0TO5IK_2601271644
-  // process.env.PHONEPE_SALT_KEY= ZGRmN2U4ZjYtZDNkZS00NTk5LWI4NzYtM2MwNzc2YmY4ZmQ0
-  // process.env.PHONEPE_BASE_URL= https://api-preprod.phonepe.com/apis/pg-sandbox
-  // process.env.PHONEPE_SALT_INDEX= 1
+  // console.log("process.env.PHONEPE_MERCHANT_ID=", process.env.PHONEPE_MERCHANT_ID);
+  // console.log("process.env.PHONEPE_SALT_KEY=", process.env.PHONEPE_SALT_KEY);
+  // console.log("process.env.PHONEPE_BASE_URL=", process.env.PHONEPE_BASE_URL);
+  // console.log("process.env.PHONEPE_SALT_INDEX=", process.env.PHONEPE_SALT_INDEX);
+  // console.log("redirectUrl=", redirectUrl);
+  // console.log("callbackUrl=", callbackUrl);
+
 
   const payload = {
     merchantId: process.env.PHONEPE_MERCHANT_ID,
