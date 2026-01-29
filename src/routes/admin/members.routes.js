@@ -21,6 +21,14 @@ const router = Router()
 
 const ALLOWED_MEMBER_ROLES = new Set(['sadharan', 'member', 'founder', 'admin'])
 
+const getReferredByCode = (user) => {
+  const cf = user?.customFields
+  if (!cf) return null
+  if (typeof cf.get === 'function') return cf.get('referredBy') || null
+  if (typeof cf === 'object') return cf.referredBy || cf.referred_by || null
+  return null
+}
+
 const serializeUser = (user) => ({
   id: user._id,
   name: user.name,
@@ -141,8 +149,36 @@ router.get('/', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN', 'FINANCE_ADMIN'), ah
     User.countDocuments(filter)
   ])
 
+  const referredByCodes = Array.from(new Set(
+    data
+      .map((u) => getReferredByCode(u))
+      .filter((v) => typeof v === 'string' && v.trim().length > 0)
+      .map((v) => v.trim().toUpperCase())
+  ))
+
+  const referrers = referredByCodes.length > 0
+    ? await User.find({ referralCode: { $in: referredByCodes } })
+      .select('name displayName referralCode')
+      .lean()
+    : []
+
+  const referrerByCode = new Map(referrers.map((u) => [String(u.referralCode || '').toUpperCase(), u]))
+
   res.json({
-    data: data.map(serializeUser),
+    data: data.map((user) => {
+      const referredBy = getReferredByCode(user)
+      const norm = typeof referredBy === 'string' ? referredBy.trim().toUpperCase() : null
+      const ref = norm ? referrerByCode.get(norm) : null
+      return {
+        ...serializeUser(user),
+        referredBy: norm || null,
+        referredByUser: ref ? {
+          id: ref._id,
+          name: ref.displayName || ref.name,
+          referralCode: ref.referralCode,
+        } : null
+      }
+    }),
     meta: {
       total,
       page: parsedPage,
@@ -156,12 +192,23 @@ router.get('/', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN', 'FINANCE_ADMIN'), ah
 router.get('/:id', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN', 'FINANCE_ADMIN'), ah(async (req, res) => {
   const user = await User.findById(req.params.id)
   if (!user) return res.status(404).json({ error: 'Member not found' })
+  const referredBy = getReferredByCode(user)
+  const norm = typeof referredBy === 'string' ? referredBy.trim().toUpperCase() : null
+  const ref = norm ? await User.findOne({ referralCode: norm }).select('name displayName referralCode').lean() : null
   const payments = await Payment.find({ $or: [{ userId: user._id }, { preSignupId: user._id }] }).sort('-createdAt')
   let person = await Person.findOne({ userId: user._id })
   if (!person && mapUserRoleToPersonRole(user.role)) {
     person = await ensurePersonForUser(user)
   }
-  res.json({ member: serializeUser(user), person: serializePerson(person), payments })
+  res.json({
+    member: {
+      ...serializeUser(user),
+      referredBy: norm || null,
+      referredByUser: ref ? { id: ref._id, name: ref.displayName || ref.name, referralCode: ref.referralCode } : null
+    },
+    person: serializePerson(person),
+    payments
+  })
 }))
 
 router.post('/', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req, res) => {

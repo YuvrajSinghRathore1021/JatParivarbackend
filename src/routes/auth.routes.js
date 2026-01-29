@@ -8,7 +8,8 @@ import { ah } from '../utils/asyncHandler.js'
 import { signFor } from '../utils/jwt.js'
 import { CONFIG, cookieOpts } from '../config/env.js'
 import { ensurePersonForUser } from '../utils/personSync.js'
-import { generateUniqueReferralCode, isValidReferralCodeFormat, normalizeReferralCode } from '../utils/referral.js'
+import { generateUniqueReferralCode, isValidReferralCodeFormat, normalizeReferralCode, referralCodeRegex } from '../utils/referral.js'
+import { validatePreSignupPayload } from '../utils/preSignupValidation.js'
 
 const r = Router()
 
@@ -37,7 +38,7 @@ r.post('/check-referral', ah(async (req, res) => {
   }
 
   // 4️⃣ Check existence
-  const exists = await User.exists({ referralCode: refCode })
+  const exists = await User.exists({ referralCode: referralCodeRegex(refCode) })
 
   // 5️⃣ Response
   res.json({ exists: Boolean(exists) })
@@ -58,11 +59,10 @@ r.post('/register', ah(async (req, res) => {
   if (!phone) {
     return res.status(400).json({ error: 'Phone is required' })
   }
-  if (!form.password || form.password.length < 6) {
-    return res.status(400).json({ error: 'Password is required' })
-  }
-  if (!form.name) {
-    return res.status(400).json({ error: 'Name is required' })
+
+  const validation = validatePreSignupPayload(body)
+  if (!validation.ok) {
+    return res.status(400).json({ error: validation.error })
   }
 
   const existing = await User.findOne({ phone })
@@ -94,19 +94,6 @@ r.post('/register', ah(async (req, res) => {
 
   const referralCode = await generateUniqueReferralCode(User)
   const dateOfBirth = form.dob ? new Date(form.dob) : undefined
-  const education = typeof form.education === 'string'
-    ? form.education
-    : form?.education?.highestQualification || undefined
-
-  const janAadhaarUrlValue =
-    [
-      body?.janAadhaarUrl,
-      body?.janAadharUrl,
-      form?.janAadhaarUrl,
-      form?.janAadharUrl,
-      body?.janAadhaarFileUrl,
-      body?.janAadharFileUrl,
-    ].find((v) => typeof v === 'string' && v.trim().length > 0) || null
 
   const user = await User.create({
     name: form.name,
@@ -116,21 +103,16 @@ r.post('/register', ah(async (req, res) => {
     passwordHash,
     role: planMeta.role,
     referralCode,
-    avatarUrl: profilePhotoUrl,
+    avatarUrl: validation.profilePhotoUrl,
     occupation: form.occupation,
     designation: form.designation,
     department: form?.department,
-    education,
+    education: form.education,
     gender: form.gender,
     dateOfBirth: Number.isNaN(dateOfBirth?.getTime?.()) ? undefined : dateOfBirth,
-    address: {
-      line1: addr.line1,
-      line2: addr.line2,
-      state: addr.state,
-      district: addr.district,
-      city: addr.city,
-      pin: addr.pin
-    },
+    occupationAddress: form.occupationAddress,
+    currentAddress: form.currentAddress,
+    parentalAddress: form.parentalAddress,
     gotra: {
       self: gotra.self,
       mother: gotra.mother,
@@ -144,14 +126,14 @@ r.post('/register', ah(async (req, res) => {
     planTitle: planDoc?.titleEn || planMeta.title,
     planAmount: planDoc?.price || planMeta.amount,
     status: 'active',
-    janAadhaarUrl: janAadhaarUrlValue,
+    janAadhaarUrl: validation.janAadhaarUrl,
     customFields: normalizedRef ? { referredBy: normalizedRef } : undefined
   })
 
   await ensurePersonForUser(user, {
     name: user.displayName || user.name,
     photo: user.avatarUrl,
-    place: addr.city,
+    place: form?.currentAddress?.city || form?.occupationAddress?.city || '',
     publicNote: user.publicNote
   })
 

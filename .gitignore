@@ -12,14 +12,10 @@ dist
 dist-ssr
 *.local
 
-# .env
-# *.env
-# src/config/env.js
-
-# # env & local secrets
-# .env
-# *.env
-# src/config/env.js
+# env & local secrets
+.env
+*.env
+!.env.example
 
 # # scripts (ignore whole folder)
 # src/scripts/

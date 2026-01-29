@@ -10,6 +10,11 @@ export const normalizeReferralCode = (value) => {
   return normalized.length ? normalized : null
 }
 
+const escapeRegex = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+// Case-insensitive exact match, to support older data where referralCode may not be uppercase.
+export const referralCodeRegex = (code) => new RegExp(`^${escapeRegex(code)}$`, 'i')
+
 // Allow existing long/seeded codes while enforcing sane patterns for new ones.
 export const isValidReferralCodeFormat = (code) => {
   if (!code) return false

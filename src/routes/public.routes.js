@@ -383,9 +383,17 @@ r.get('/news/:slug', ah(async (req, res) => {
 
 // Active plans
 r.get('/plans', ah(async (_req, res) => {
-  const plans = await Plan.find({ active: true })
+  const codes = ['founder', 'member', 'sadharan']
+  // Prefer active plans, but fall back to returning the configured plans even if inactive
+  // (so the client can still render updated prices/titles and avoid hardcoded defaults).
+  let plans = await Plan.find({ active: true, code: { $in: codes } })
     .sort({ order: 1, createdAt: 1 })
     .lean()
+  if (!plans || plans.length === 0) {
+    plans = await Plan.find({ code: { $in: codes } })
+      .sort({ order: 1, createdAt: 1 })
+      .lean()
+  }
   res.json(plans)
 }))
 

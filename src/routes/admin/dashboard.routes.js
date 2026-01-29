@@ -9,18 +9,21 @@ import { ah } from '../../utils/asyncHandler.js'
 const router = Router()
 
 router.get('/summary', ah(async (req, res) => {
+  const memberRoles = ['founder', 'member', 'sadharan']
+  const activeMemberFilter = { role: { $in: memberRoles }, status: 'active' }
+
   const [membersCount, founderCount, paymentsToday, plans] = await Promise.all([
-    User.countDocuments({ role: 'member' }),
-    User.countDocuments({ role: 'founder' }),
+    User.countDocuments(activeMemberFilter),
+    User.countDocuments({ role: 'founder', status: 'active' }),
     Payment.aggregate([
-      { $match: { createdAt: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) } } },
+      { $match: { createdAt: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) }, status: 'success' } },
       { $group: { _id: null, total: { $sum: '$amount' }, count: { $sum: 1 } } }
     ]),
-    Plan.find({})
+    Plan.find({ code: { $in: ['founder', 'member', 'sadharan'] } })
   ])
 
   const planBreakup = await User.aggregate([
-    { $match: { planId: { $ne: null } } },
+    { $match: { ...activeMemberFilter, planId: { $ne: null } } },
     { $group: { _id: '$planId', count: { $sum: 1 } } }
   ])
 
