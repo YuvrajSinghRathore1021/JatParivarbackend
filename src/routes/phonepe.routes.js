@@ -105,12 +105,13 @@ const fulfillPreSignupIfNeeded = async (pre) => {
 
   const preForm = pre.form && typeof pre.form === 'object' ? pre.form : {}
   const preGotra = pre.gotra && typeof pre.gotra === 'object' ? pre.gotra : {}
-  const planCode = ['founder', 'member', 'sadharan'].includes(pre.plan) ? pre.plan : 'sadharan'
+  const normalizedPlan = pre.plan === 'member' ? 'management' : pre.plan
+  const planCode = ['founder', 'management', 'sadharan'].includes(normalizedPlan) ? normalizedPlan : 'sadharan'
 
   let user = await User.findOne({ phone: pre.phone })
   if (!user) {
     const passwordHash = await bcrypt.hash(preForm.password, 10)
-    const role = planCode === 'founder' ? 'founder' : planCode === 'member' ? 'member' : 'sadharan'
+    const role = planCode === 'founder' ? 'founder' : planCode === 'management' ? 'management' : 'sadharan'
     const referralCode = await generateUniqueReferralCode(User)
     const normalizedRef = normalizeReferralCode(pre.refCode)
     const dateOfBirth = preForm.dob ? new Date(preForm.dob) : undefined
@@ -210,7 +211,7 @@ const callbackUrl = CONFIG.PHONEPE.CALLBACK_URL || `${CONFIG.BASE_URL}${CONFIG.A
 // r.post('/create', ah(async (req, res) => {
 //   const { phone, refCode, form, addr, gotra, janAadharUrl, profilePhotoUrl, plan } = req.body
 //   const pre = await PreSignup.create({ phone, refCode, form, addr, gotra, janAadharUrl, profilePhotoUrl, plan })
-//   const amount = plan === 'founder' ? 10100000 : plan === 'member' ? 5000000 : 210000
+//   const amount = plan === 'founder' ? 10100000 : plan === 'management' ? 5000000 : 210000
 
 //   const merchantTransactionId = nanoid(12)
 //   const payload = {
@@ -275,14 +276,15 @@ r.post('/create', ah(async (req, res) => {
       plan
     });
 
-    const planCode = ['founder', 'member', 'sadharan'].includes(plan) ? plan : 'sadharan'
+    const normalizedPlan = plan === 'member' ? 'management' : plan
+    const planCode = ['founder', 'management', 'sadharan'].includes(normalizedPlan) ? normalizedPlan : 'sadharan'
     const planDoc = await Plan.findOne({ code: planCode }).select('_id titleEn titleHi price active').lean()
     if (planDoc && planDoc.active === false) {
       return res.status(400).json({ error: 'Selected plan is not available' })
     }
 
     // Amount in paisa (PhonePe expects integer paisa)
-    const fallbackPriceRupees = { founder: 101000, member: 50000, sadharan: 2100 }[planCode]
+    const fallbackPriceRupees = { founder: 101000, management: 50000, sadharan: 2100 }[planCode]
     const priceRupees = Number(planDoc?.price ?? fallbackPriceRupees)
     if (!Number.isFinite(priceRupees) || priceRupees <= 0) {
       return res.status(400).json({ error: 'Invalid plan price' })

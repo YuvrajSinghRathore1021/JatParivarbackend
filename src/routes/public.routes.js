@@ -18,7 +18,7 @@ const r = Router()
 const PERSON_USER_FIELDS = 'displayName name avatarUrl occupation designation department education publicNote contactEmail phone alternatePhone address planTitle planAmount role status referralCode bussinessurl adimage message currentAddress parentalAddress occupationAddress'
 const ensureRosterForRole = async (personRole) => {
   const normalized = personRole === 'management' ? 'management' : 'founder'
-  const userRole = normalized === 'management' ? 'member' : 'founder'
+  const userRole = normalized === 'management' ? 'management' : 'founder'
   await pruneDuplicatePersonsForRole(normalized)
   const existing = await Person.find({ role: normalized }).select('userId').lean()
   const existingIds = new Set(
@@ -26,8 +26,9 @@ const ensureRosterForRole = async (personRole) => {
       .map((doc) => (doc.userId ? doc.userId.toString() : null))
       .filter(Boolean)
   )
+  const roleFilter = userRole === 'management' ? { $in: ['management', 'member'] } : userRole
   const missing = await User.find({
-    role: userRole,
+    role: roleFilter,
     status: 'active',
     _id: { $nin: Array.from(existingIds) }
   })
@@ -128,7 +129,7 @@ r.get('/home/strips', ah(async (_req, res) => {
     .populate(populate)
     .lean()
 
-  const members = await User.find({ role: 'member', status: 'active' })
+  const members = await User.find({ role: { $in: ['management', 'member'] }, status: 'active' })
     .sort('-createdAt')
     .limit(12)
     .select('name displayName avatarUrl occupation designation department education planTitle planAmount')
@@ -181,7 +182,7 @@ r.get('/ads', ah(async (req, res) => {
 
 // Members list
 r.get('/members', ah(async (_req, res) => {
-  const q = await User.find({ role: 'member', status: 'active' })
+  const q = await User.find({ role: { $in: ['management', 'member'] }, status: 'active' })
     .select('name displayName avatarUrl occupation designation department education planTitle planAmount')
     .limit(200)
     .lean()
@@ -383,7 +384,7 @@ r.get('/news/:slug', ah(async (req, res) => {
 
 // Active plans
 r.get('/plans', ah(async (_req, res) => {
-  const codes = ['founder', 'member', 'sadharan']
+  const codes = ['founder', 'management', 'member', 'sadharan']
   // Prefer active plans, but fall back to returning the configured plans even if inactive
   // (so the client can still render updated prices/titles and avoid hardcoded defaults).
   let plans = await Plan.find({ active: true, code: { $in: codes } })
@@ -394,7 +395,26 @@ r.get('/plans', ah(async (_req, res) => {
       .sort({ order: 1, createdAt: 1 })
       .lean()
   }
-  res.json(plans)
+
+  // Normalize legacy plan code "member" -> "management" and dedupe.
+  const byCode = new Map()
+  for (const plan of plans) {
+    const rawCode = String(plan.code || '').toLowerCase()
+    const code = rawCode === 'member' ? 'management' : rawCode
+    if (!code) continue
+
+    const existing = byCode.get(code)
+    if (!existing) {
+      byCode.set(code, { ...plan, code })
+      continue
+    }
+
+    // Prefer the real management plan over legacy member when both exist.
+    if (existing.code === 'management' && rawCode === 'member') continue
+    byCode.set(code, { ...plan, code })
+  }
+
+  res.json(Array.from(byCode.values()))
 }))
 
 // Footer info
@@ -407,6 +427,7 @@ r.get('/site/footer', ah(async (_req, res) => {
   })
   const socials = await readSetting('site.socials', [])
   const footerLinks = await readSetting('site.footerLinks', { quick: [], secondary: [] })
+  res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=600')
   res.json({ contact, socials, footerLinks })
 }))
 

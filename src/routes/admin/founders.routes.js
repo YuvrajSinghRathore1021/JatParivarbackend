@@ -49,7 +49,7 @@ const serialize = (doc) => {
 router.get('/', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req, res) => {
   const { role = 'founder', search } = req.query
   const normalizedRole = role === 'management' ? 'management' : 'founder'
-  const targetUserRole = normalizedRole === 'founder' ? 'founder' : 'member'
+  const targetUserRole = normalizedRole === 'founder' ? 'founder' : 'management'
   const filter = { role: normalizedRole }
   await pruneDuplicatePersonsForRole(normalizedRole)
 
@@ -66,8 +66,9 @@ router.get('/', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req, res)
       .filter(Boolean)
   )
 
+  const roleFilter = targetUserRole === 'management' ? { $in: ['management', 'member'] } : targetUserRole
   const missingUsers = await User.find({
-    role: targetUserRole,
+    role: roleFilter,
     _id: { $nin: Array.from(personUserIds) }
   })
 

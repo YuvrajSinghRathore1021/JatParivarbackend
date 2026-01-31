@@ -59,12 +59,12 @@ async function main() {
 
   // ---- Plans ---------------------------------------------------------------
   await Plan.deleteMany({})
-  const [pFounder, pMember, pSadharan] = await Plan.insertMany([
+  const [pFounder, pManagement, pSadharan] = await Plan.insertMany([
     { code: 'founder',  titleEn: 'Founder',  titleHi: 'संस्थापक', price: 250000, order: 1, active: true },
-    { code: 'member',   titleEn: 'Member',   titleHi: 'सदस्य',     price: 1000,   order: 2, active: true },
+    { code: 'management', titleEn: 'Management', titleHi: 'प्रबंधन', price: 1000, order: 2, active: true },
     { code: 'sadharan', titleEn: 'General',  titleHi: 'साधारण',    price: 0,      order: 3, active: true },
   ])
-  console.log('📦 Plans:', [pFounder.code, pMember.code, pSadharan.code].join(', '))
+  console.log('📦 Plans:', [pFounder.code, pManagement.code, pSadharan.code].join(', '))
 
   // ---- Users ---------------------------------------------------------------
   await User.deleteMany({})
@@ -103,65 +103,65 @@ async function main() {
       // Member (for home strip)
       name: 'Ankit Dahiya', displayName: 'Ankit Dahiya',
       email: 'ankit@example.com', phone: '9000000003',
-      passwordHash: userPw, role: 'member',
+      passwordHash: userPw, role: 'management',
       avatarUrl: 'https://i.pravatar.cc/150?img=31',
       occupation: 'Software Engineer', designation: 'TCS',department :'',education:'',
       gender: 'male', maritalStatus: 'never_married',
       address: { state: 'Delhi', district: 'New Delhi', city: 'Dwarka', pin: '110077' },
       gotra: { self: 'Dahiya', mother: 'Rathee', dadi: 'Kadian', nani: 'Deswal' },
-      planId: pMember._id, planTitle: pMember.titleEn, planAmount: pMember.price,
+      planId: pManagement._id, planTitle: pManagement.titleEn, planAmount: pManagement.price,
       status: 'active',
     },
     {
       // Member
       name: 'Kiran Hooda', displayName: 'Kiran Hooda',
       email: 'kiran@example.com', phone: '9000000004',
-      passwordHash: userPw, role: 'member',
+      passwordHash: userPw, role: 'management',
       avatarUrl: 'https://i.pravatar.cc/150?img=65',
       occupation: 'Chartered Accountant', designation: 'EY',department :'',education:'',
       gender: 'female', maritalStatus: 'never_married',
       address: { state: 'Haryana', district: 'Sonipat', city: 'Gohana', pin: '131301' },
       gotra: { self: 'Hooda', mother: 'Maan', dadi: 'Jakhar', nani: 'Sangwan' },
-      planId: pMember._id, planTitle: pMember.titleEn, planAmount: pMember.price,
+      planId: pManagement._id, planTitle: pManagement.titleEn, planAmount: pManagement.price,
       status: 'active',
     },
     {
       // Member
       name: 'Vikas Sangwan', displayName: 'Vikas Sangwan',
       email: 'vikas@example.com', phone: '9000000005',
-      passwordHash: userPw, role: 'member',
+      passwordHash: userPw, role: 'management',
       avatarUrl: 'https://i.pravatar.cc/150?img=22',
       occupation: 'Civil Engineer', designation: 'L&T',department :'',education:'',
       gender: 'male', maritalStatus: 'never_married',
       address: { state: 'Rajasthan', district: 'Sikar', city: 'Sikar', pin: '332001' },
       gotra: { self: 'Sangwan', mother: 'Joon', dadi: 'Duhan', nani: 'Lamba' },
-      planId: pMember._id, planTitle: pMember.titleEn, planAmount: pMember.price,
+      planId: pManagement._id, planTitle: pManagement.titleEn, planAmount: pManagement.price,
       status: 'active',
     },
     {
       // Member
       name: 'Neha Sehrawat', displayName: 'Neha Sehrawat',
       email: 'neha@example.com', phone: '9000000006',
-      passwordHash: userPw, role: 'member',
+      passwordHash: userPw, role: 'management',
       avatarUrl: 'https://i.pravatar.cc/150?img=48',
       occupation: 'Product Manager', designation: 'Flipkart',department :'',education:'',
       gender: 'female', maritalStatus: 'never_married',
       address: { state: 'Delhi', district: 'South West', city: 'Dwarka', pin: '110078' },
       gotra: { self: 'Sehrawat', mother: 'Khatri', dadi: 'Dabas', nani: 'Sangwan' },
-      planId: pMember._id, planTitle: pMember.titleEn, planAmount: pMember.price,
+      planId: pManagement._id, planTitle: pManagement.titleEn, planAmount: pManagement.price,
       status: 'active',
     },
     {
       // Member
       name: 'Pooja Deswal', displayName: 'Pooja Deswal',
       email: 'pooja@example.com', phone: '9000000007',
-      passwordHash: userPw, role: 'member',
+      passwordHash: userPw, role: 'management',
       avatarUrl: 'https://i.pravatar.cc/150?img=67',
       occupation: 'Doctor', designation: 'AIIMS',department :'',education:'',
       gender: 'female', maritalStatus: 'never_married',
       address: { state: 'Delhi', district: 'New Delhi', city: 'Saket', pin: '110017' },
       gotra: { self: 'Deswal', mother: 'Sihag', dadi: 'Nain', nani: 'Punia' },
-      planId: pMember._id, planTitle: pMember.titleEn, planAmount: pMember.price,
+      planId: pManagement._id, planTitle: pManagement.titleEn, planAmount: pManagement.price,
       status: 'active',
     },
     {
@@ -184,7 +184,7 @@ async function main() {
   await Membership.deleteMany({})
   await Membership.insertMany(users.map(u => ({
     userId: u._id,
-    plan: u.role === 'founder' ? 'founder' : (u.role === 'member' ? 'member' : 'sadharan'),
+    plan: u.role === 'founder' ? 'founder' : (u.role === 'management' ? 'management' : 'sadharan'),
     status: 'active',
     startedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
   })))
@@ -375,7 +375,7 @@ async function main() {
     phone: '9666666666',
     refCode: 'REF123',
     form: { name: 'Demo Lead' },
-    plan: 'member',
+    plan: 'management',
     status: 'paid',
   })
 

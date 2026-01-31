@@ -18,6 +18,7 @@ import gauravRoutes from './gauravs.routes.js'
 import settingRoutes from './settings.routes.js'
 import auditRoutes from './audit.routes.js'
 import jobRoutes from './jobs.routes.js'
+import adminsRoutes from './admins.routes.js'
 
 const router = Router()
 
@@ -38,5 +39,6 @@ router.use('/matrimony', adminAuth, matrimonyRoutes)
 router.use('/gaurav', adminAuth, gauravRoutes)
 router.use('/settings', adminAuth, settingRoutes)
 router.use('/audit-logs', adminAuth, auditRoutes)
+router.use('/admins', adminAuth, adminsRoutes)
 
 export default router

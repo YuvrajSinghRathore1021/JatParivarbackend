@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import { ensurePersonForUser, mapUserRoleToPersonRole, removePersonForUser } from '../utils/personSync.js'
 import { generateUniqueReferralCode, normalizeReferralCode } from '../utils/referral.js'
 
+const PERSON_SYNC_ENABLED = process.env.DISABLE_PERSON_SYNC !== '1'
 
 const occupationAddressSchema = new mongoose.Schema({
   occupationaddress: String,
@@ -54,7 +55,8 @@ const userSchema = new mongoose.Schema({
   email: { type: String, index: true },
   phone: { type: String, unique: true },
   passwordHash: String,
-  role: { type: String, enum: ['admin', 'founder', 'member', 'sadharan'], default: 'sadharan' },
+  // User role is for membership/public listing only. Admin access is controlled via the separate Admin model.
+  role: { type: String, enum: ['founder', 'management', 'sadharan'], default: 'sadharan' },
   roles: { type: [String], default: [] },
   sessionVersion: { type: Number, default: 1 },
   referralCode: { type: String, unique: true, sparse: true, trim: true, uppercase: true },
@@ -95,6 +97,9 @@ userSchema.methods.compare = function (pw) {
 }
 
 userSchema.pre('validate', async function () {
+  if (this.role === 'member') this.role = 'management'
+  // Back-compat cleanup: user.role must never be "admin" (admins are in Admin collection).
+  if (this.role === 'admin') this.role = 'sadharan'
   if (this.referralCode) {
     this.referralCode = normalizeReferralCode(this.referralCode)
   }
@@ -125,10 +130,12 @@ const logSyncError = (err) => {
 }
 
 userSchema.post('save', function (doc) {
+  if (!PERSON_SYNC_ENABLED) return
   syncPersonFromUser(doc).catch(logSyncError)
 })
 
 userSchema.post('findOneAndUpdate', function (doc) {
+  if (!PERSON_SYNC_ENABLED) return
   const targetId = doc?._id || this.getQuery()?._id
   if (!targetId) return
   this.model.findById(targetId).then((updated) => {
@@ -140,10 +147,12 @@ userSchema.post('findOneAndUpdate', function (doc) {
 })
 
 userSchema.post('deleteOne', { document: true, query: false }, function () {
+  if (!PERSON_SYNC_ENABLED) return
   removePersonForUser(this._id).catch(logSyncError)
 })
 
 userSchema.post('findOneAndDelete', function (doc) {
+  if (!PERSON_SYNC_ENABLED) return
   if (!doc) return
   removePersonForUser(doc._id).catch(logSyncError)
 })

@@ -8,7 +8,11 @@ const preSchema = new mongoose.Schema({
   gotra: Object,
   janAadharUrl: String,
   profilePhotoUrl: String,
-  plan: { type:String, enum:['founder','member','sadharan'] },
+  plan: { type:String, enum:['founder','management','sadharan'] },
   status: { type:String, enum:['pending','paid','failed'], default:'pending' }
 },{ timestamps:true })
+
+preSchema.pre('validate', function () {
+  if (this.plan === 'member') this.plan = 'management'
+})
 export const PreSignup = mongoose.model('PreSignup', preSchema)

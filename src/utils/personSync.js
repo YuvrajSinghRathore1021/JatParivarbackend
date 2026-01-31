@@ -3,6 +3,8 @@ import { Person } from '../models/Person.js'
 
 const PERSON_ROLE_MAP = {
   founder: 'founder',
+  management: 'management',
+  // Back-compat: older records used "member" for management.
   member: 'management'
 }
 

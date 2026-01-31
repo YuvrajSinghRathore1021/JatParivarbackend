@@ -19,7 +19,9 @@ import { generateUniqueReferralCode } from '../../utils/referral.js'
 
 const router = Router()
 
-const ALLOWED_MEMBER_ROLES = new Set(['sadharan', 'member', 'founder', 'admin'])
+const ALLOWED_MEMBER_ROLES = new Set(['sadharan', 'management', 'founder'])
+// Back-compat: accept legacy "member" value from older clients and treat it as "management".
+const normalizeMemberRole = (role) => (role === 'member' ? 'management' : role)
 
 const getReferredByCode = (user) => {
   const cf = user?.customFields
@@ -41,7 +43,7 @@ const serializeUser = (user) => ({
   planId: user.planId,
   planTitle: user.planTitle,
   planAmount: user.planAmount,
-  role: user.role,
+  role: user.role === 'member' ? 'management' : (user.role === 'admin' ? 'sadharan' : user.role),
   gender: user.gender,
   maritalStatus: user.maritalStatus,
   dateOfBirth: user.dateOfBirth,
@@ -115,6 +117,9 @@ router.get('/', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN', 'FINANCE_ADMIN'), ah
       { phone: regex },
       { alternatePhone: regex },
       { referralCode: regex },
+      // show people who USED a referral code too (customFields is a Map<String,String>).
+      { 'customFields.referredBy': regex },
+      { 'customFields.referred_by': regex },
       { 'gotra.self': regex },
       { 'gotra.mother': regex },
       { 'gotra.dadi': regex },
@@ -122,7 +127,10 @@ router.get('/', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN', 'FINANCE_ADMIN'), ah
     ]
   }
   if (status) filter.status = status
-  if (role) filter.role = role
+  if (role) {
+    const normalizedRole = normalizeMemberRole(role)
+    filter.role = normalizedRole === 'management' ? { $in: ['management', 'member'] } : normalizedRole
+  }
   if (state) filter['currentAddress.state'] = state
   if (city) filter['currentAddress.city'] = city
   if (from || to) {
@@ -227,8 +235,15 @@ router.post('/', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN'), ah(async (req, res
   }
 
   const referralCode = await generateUniqueReferralCode(User)
-  const memberRole = ALLOWED_MEMBER_ROLES.has(body.role) ? body.role : 'sadharan'
-  const plan = memberRole ? await Plan.findOne({ code: memberRole }) : null
+  const desiredRole = normalizeMemberRole(body.role)
+  if (body.role && !ALLOWED_MEMBER_ROLES.has(desiredRole)) {
+    return res.status(400).json({ error: 'Invalid role' })
+  }
+  const memberRole = ALLOWED_MEMBER_ROLES.has(desiredRole) ? desiredRole : 'sadharan'
+  let plan = memberRole ? await Plan.findOne({ code: memberRole }) : null
+  if (!plan && memberRole === 'management') {
+    plan = await Plan.findOne({ code: 'member' })
+  }
 
   const userPayload = cleanObject({
     name,
@@ -309,7 +324,7 @@ router.patch('/:id', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN', 'FINANCE_ADMIN'
     phone: body.phone,
     alternatePhone: body.alternatePhone,
     status: body.status,
-    role: body.role,
+    role: normalizeMemberRole(body.role),
     gender: body.gender,
     maritalStatus: body.maritalStatus,
     contactEmail: body.contactEmail,
@@ -333,10 +348,15 @@ router.patch('/:id', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN', 'FINANCE_ADMIN'
   })
 
   if (body.role) {
-    if (!ALLOWED_MEMBER_ROLES.has(body.role)) {
+    const desiredRole = normalizeMemberRole(body.role)
+    if (!ALLOWED_MEMBER_ROLES.has(desiredRole)) {
       return res.status(400).json({ error: 'Invalid role' })
     }
-    const plan = await Plan.findOne({ code: body.role })
+    updates.role = desiredRole
+    let plan = await Plan.findOne({ code: desiredRole })
+    if (!plan && desiredRole === 'management') {
+      plan = await Plan.findOne({ code: 'member' })
+    }
     updates.planId = plan?._id || null
     updates.planTitle = plan?.titleEn || updates.planTitle
     updates.planAmount = plan?.price ?? updates.planAmount

@@ -3,10 +3,10 @@ import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
-import rateLimit from 'express-rate-limit'
 import path from 'path'
 import { connectDB } from './config/db.js'
 import { CONFIG } from './config/env.js'
+import { buildPublicReadLimiter, buildSensitiveLimiter } from './middleware/rateLimiters.js'
 
 import authRoutes from './routes/auth.routes.js'
 import otpRoutes from './routes/otp.routes.js'
@@ -75,8 +75,17 @@ app.use(cookieParser())
 // app.use('/uploads', express.static(path.resolve('src/uploads')))
 app.use('/uploads', express.static(path.resolve('src/uploads')))
 
-const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 200 })
-app.use(limiter)
+// Rate limiting:
+// - Allow higher throughput for public read endpoints (footer/home pages are fetched for every visitor).
+// - Keep stricter limits for auth/admin/payment flows.
+const publicReadLimiter = buildPublicReadLimiter()
+const sensitiveLimiter = buildSensitiveLimiter()
+
+app.use(`${CONFIG.API_PREFIX}/public`, publicReadLimiter)
+app.use(`${CONFIG.API_PREFIX}/auth`, sensitiveLimiter)
+app.use(`${CONFIG.API_PREFIX}/otp`, sensitiveLimiter)
+app.use(`${CONFIG.API_PREFIX}/payments/phonepe`, sensitiveLimiter)
+app.use(`${CONFIG.API_PREFIX}/admin`, sensitiveLimiter)
 
 app.get(`${CONFIG.API_PREFIX}/health`, (_, res) => res.json({ ok: true }))
 

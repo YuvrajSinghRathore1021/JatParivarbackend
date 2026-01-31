@@ -70,11 +70,12 @@ r.post('/register', ah(async (req, res) => {
     return res.status(409).json({ error: 'User already exists' })
   }
 
-  const planCode = ['founder', 'member', 'sadharan'].includes(plan) ? plan : 'sadharan'
+  const normalizedPlan = plan === 'member' ? 'management' : plan
+  const planCode = ['founder', 'management', 'sadharan'].includes(normalizedPlan) ? normalizedPlan : 'sadharan'
   const planDoc = await Plan.findOne({ code: planCode })
   const planMeta = {
     founder: { role: 'founder', amount: 101000, title: 'Founder' },
-    member: { role: 'member', amount: 50000, title: 'Member' },
+    management: { role: 'management', amount: 50000, title: 'Management' },
     sadharan: { role: 'sadharan', amount: 2100, title: 'Sadharan' }
   }[planCode]
 
