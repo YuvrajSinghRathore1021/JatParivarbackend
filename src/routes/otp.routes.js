@@ -31,7 +31,11 @@ const r = Router()
 const store = new Map()
 
 r.post('/start', ah(async (req, res) => {
-  const { phone } = req.body
+  const { phone, type = "otp" } = req.body
+  let templateId = 208010;
+  if (type == "forgot") {
+    templateId = 208393;
+  }
   if (!phone) {
     return res.status(400).json({ error: 'Phone is required' })
   }
@@ -42,12 +46,12 @@ r.post('/start', ah(async (req, res) => {
     code,
     expiresAt: Date.now() + 5 * 60 * 1000 // 5 minutes
   })
-  // console.log("otp=", code)
+  console.log("otp=", code)
 
   const result = await sendOtp({
     phone,
     otp: code,
-    templateId: '208010'
+    templateId: templateId.toString()
   })
 
   if (!result.success) {
