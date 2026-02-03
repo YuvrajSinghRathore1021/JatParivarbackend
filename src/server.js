@@ -3,10 +3,10 @@ import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
 import cookieParser from 'cookie-parser'
-import path from 'path'
 import { connectDB } from './config/db.js'
 import { CONFIG } from './config/env.js'
 import { buildPublicReadLimiter, buildSensitiveLimiter } from './middleware/rateLimiters.js'
+import { ensureUploadDir, UPLOAD_DIR } from './utils/uploadDir.js'
 
 import authRoutes from './routes/auth.routes.js'
 import otpRoutes from './routes/otp.routes.js'
@@ -22,6 +22,7 @@ import adminRoutes from './routes/admin/index.js'
 import foundRoutes from './routes/found.routes.js'
 
 await connectDB()
+ensureUploadDir()
 
 const app = express()
 app.set('trust proxy', 1)
@@ -33,39 +34,22 @@ app.use(
   })
 )
 
-// app.use(cors({
-//   origin: (origin, cb) => {
-//     if (!origin) return cb(null, true)
-//     if (CONFIG.FRONTEND_URLS.includes(origin)) return cb(null, true)
-//     return cb(new Error('Not allowed by CORS'))
-//   },
-//   credentials: true
-// }))
-// Global CORS (reflects request origin, allows creds, handles preflight early)
-app.use((req, res, next) => {
-  const origin = req.headers.origin
-  if (origin) {
-    res.header('Access-Control-Allow-Origin', origin)
-  }
-  res.header('Access-Control-Allow-Credentials', 'true')
-  res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS')
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization')
-  if (req.method === 'OPTIONS') return res.sendStatus(204)
-  next()
-})
-
-app.use(cors({
-  origin: (origin, callback) => callback(null, true),
+const corsOptions = {
+  origin: (origin, cb) => {
+    // Allow non-browser requests (curl, server-to-server, etc.)
+    if (!origin) return cb(null, true)
+    if (CONFIG.FRONTEND_URLS.includes(origin)) return cb(null, true)
+    return cb(new Error(`Not allowed by CORS: ${origin}`))
+  },
   credentials: true,
-}));
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
+}
+app.use(cors(corsOptions))
+app.options('*', cors(corsOptions))
 
-// ✅ MUST be above static route
-app.use('/uploads', (req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept')
-  next()
-})
+// Public file hosting: allow images to be embedded anywhere.
+app.use('/uploads', cors({ origin: '*', methods: ['GET', 'HEAD', 'OPTIONS'] }))
 
 
 
@@ -73,7 +57,7 @@ app.use(morgan('dev'))
 app.use(express.json({ limit: '10mb' }))
 app.use(cookieParser())
 // app.use('/uploads', express.static(path.resolve('src/uploads')))
-app.use('/uploads', express.static(path.resolve('src/uploads')))
+app.use('/uploads', express.static(UPLOAD_DIR))
 
 // Rate limiting:
 // - Allow higher throughput for public read endpoints (footer/home pages are fetched for every visitor).

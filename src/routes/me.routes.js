@@ -8,6 +8,7 @@ import { ah } from '../utils/asyncHandler.js'
 import { User } from '../models/User.js'
 import { Person } from '../models/Person.js'
 import { ensurePersonForUser, mapUserRoleToPersonRole } from '../utils/personSync.js'
+import { UPLOAD_DIR } from '../utils/uploadDir.js'
 
 const r = Router()
 
@@ -16,7 +17,7 @@ const isLocalUpload = (url) => typeof url === 'string' && url.startsWith('/uploa
 const deleteLocalUpload = async (url) => {
   if (!isLocalUpload(url)) return
   const fileName = url.replace('/uploads/', '')
-  const filePath = path.resolve('src/uploads', fileName)
+  const filePath = path.join(UPLOAD_DIR, fileName)
   try {
     await fs.promises.unlink(filePath)
   } catch (err) {
