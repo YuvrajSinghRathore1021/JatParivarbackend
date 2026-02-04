@@ -187,4 +187,30 @@ r.get('/me', ah(async (req, res) => {
   }
 }))
 
+
+
+r.post('/forgot/change-password', ah(async (req, res) => {
+  const { password, phone } = req.body || {}
+
+  if (!phone) {
+    return res.status(400).json({ error: 'Phone number is required' })
+  }
+
+  if (!password || password.length < 6) {
+    return res.status(400).json({ error: 'New password must be at least 6 characters' })
+  }
+
+  const user = await User.findOne({ phone }).select('passwordHash sessionVersion')
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' })
+  }
+
+  user.passwordHash = await bcrypt.hash(password, 10)
+  user.sessionVersion = (user.sessionVersion || 1) + 1
+  await user.save()
+
+  res.json({ ok: true, message: 'Password changed successfully' })
+}))
+
+
 export default r

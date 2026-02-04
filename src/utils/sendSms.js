@@ -3,7 +3,7 @@
 
 import axios from 'axios'
 
-const sendOtp = async ({ phone, otp, templateId }) => {
+const sendSms = async ({ phone, sms, templateId }) => {
   try {
     const response = await axios.post(
       'https://www.fast2sms.com/dev/bulkV2',
@@ -11,7 +11,7 @@ const sendOtp = async ({ phone, otp, templateId }) => {
         route: 'dlt',
         sender_id: 'CMBMPL',
         message: templateId,
-        variables_values: `${otp}|`,
+        variables_values: `${sms}|`,
         flash: 0,
         numbers: phone.toString()
       },
@@ -32,4 +32,4 @@ const sendOtp = async ({ phone, otp, templateId }) => {
   }
 }
 
-export default sendOtp
+export default sendSms

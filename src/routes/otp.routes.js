@@ -1,29 +1,8 @@
-// // backend/src/routes/otp.routes.js  (stub: OTP = 123456)
-// import { Router } from 'express'
-// import { ah } from '../utils/asyncHandler.js'
-// const sendOtp = require('../utils/sendOtp')
-// const store = new Map()
-
-// const r = Router()
-// r.post('/start', ah(async (req, res) => {
-//   const { phone } = req.body
-//   const code = '123456' // TODO: integrate Airtel DLT
-//   store.set(phone, code)
-//   res.json({ ok: true, devCode: code })
-// }))
-// r.post('/verify', ah(async (req, res) => {
-//   const { phone, code } = req.body
-//   if (store.get(phone) !== code) return res.status(400).json({ error: 'Invalid OTP' })
-//   res.json({ ok: true })
-// }))
-
-// export default r
-
 
 import { Router } from 'express'
 import { ah } from '../utils/asyncHandler.js'
 import sendOtp from '../utils/sendOtp.js'
-
+import { User } from '../models/User.js'
 
 const r = Router()
 
@@ -34,7 +13,14 @@ r.post('/start', ah(async (req, res) => {
   const { phone, type = "otp" } = req.body
   let templateId = 208010;
   if (type == "forgot") {
-    templateId = 208393;
+    templateId = 208418;
+    const userExists = await User.exists({ phone })
+
+    if (!userExists) {
+      return res.status(404).json({
+        error: 'This mobile number is not registered'
+      })
+    }
   }
   if (!phone) {
     return res.status(400).json({ error: 'Phone is required' })

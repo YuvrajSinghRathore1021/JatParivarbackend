@@ -14,7 +14,7 @@ import { signFor } from '../utils/jwt.js'
 import { CONFIG } from '../config/env.js'
 import { generateUniqueReferralCode, isValidReferralCodeFormat, normalizeReferralCode, referralCodeRegex } from '../utils/referral.js'
 import { validatePreSignupPayload } from '../utils/preSignupValidation.js'
-
+import sendSms from '../utils/sendSms.js'
 const r = Router()
 
 let cachedAccessToken = null
@@ -164,6 +164,25 @@ const fulfillPreSignupIfNeeded = async (pre) => {
     { $set: { userId: user._id } }
   )
 
+  // ✅ SEND SMS TO REFERRAL USER
+  if (pre.refCode) {
+    const refUser = await User.findOne({
+      referralCode: referralCodeRegex(pre.refCode)
+    }).select('phone name displayName')
+
+    if (refUser?.phone) {
+      try {
+        await sendSms({
+          to: refUser.phone,
+          newUserName: user.displayName || user.name || 'A new member',
+          templateId: 208469 
+        })
+      } catch (err) {
+        console.error('Referral SMS failed:', err.message)
+      }
+    }
+  }
+
   return user
 }
 
@@ -208,34 +227,6 @@ const signV1 = (payloadBase64, path) => {
 const redirectUrl = CONFIG.PHONEPE.REDIRECT_URL || `${CONFIG.BASE_URL}${CONFIG.API_PREFIX}/payments/phonepe/callback`
 const callbackUrl = CONFIG.PHONEPE.CALLBACK_URL || `${CONFIG.BASE_URL}${CONFIG.API_PREFIX}/payments/phonepe/webhook`
 
-// r.post('/create', ah(async (req, res) => {
-//   const { phone, refCode, form, addr, gotra, janAadharUrl, profilePhotoUrl, plan } = req.body
-//   const pre = await PreSignup.create({ phone, refCode, form, addr, gotra, janAadharUrl, profilePhotoUrl, plan })
-//   const amount = plan === 'founder' ? 10100000 : plan === 'management' ? 5000000 : 210000
-
-//   const merchantTransactionId = nanoid(12)
-//   const payload = {
-//     merchantId: process.env.PHONEPE_MERCHANT_ID,
-//     merchantTransactionId,
-//     amount,
-//     redirectUrl: `${redirectUrl}?pre=${pre._id}`,
-//     callbackUrl,
-//     paymentInstrument: { type: "PAY_PAGE" }
-//   }
-//   const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString('base64')
-//   const xverify = sign(payloadBase64)
-
-//   const { data } = await axios.post(
-//     `${process.env.PHONEPE_BASE_URL}`,
-//     { request: payloadBase64 },
-//     { headers: { 'Content-Type': 'application/json', 'X-VERIFY': xverify, 'X-MERCHANT-ID': process.env.PHONEPE_MERCHANT_ID } }
-//   )
-
-//   const orderId = data?.data?.merchantTransactionId || merchantTransactionId
-//   await Payment.create({ preSignupId: pre._id, orderId, merchantTransactionId, amount, plan, status: 'created', raw: data })
-
-//   res.json({ redirectUrl: data?.data?.instrumentResponse?.redirectInfo?.url })
-// }))
 
 // myyy 
 r.post('/create', ah(async (req, res) => {
@@ -398,134 +389,6 @@ r.post('/create', ah(async (req, res) => {
 
 }));
 
-// new 
-// r.post("/create", ah(async (req, res) => {
-//   // const { MUID, amount, number } = req.body;
-//   const MUID = 2638812;
-//   const amount = 7;
-//   const number = 7976929440;
-
-//   if (!MUID || !amount || !number) {
-//     return res.status(400).json({ error: "Invalid request data" });
-//   }
-
-//   const merchantTransactionId = "M" + Date.now();
-
-//   // Amount in paisa
-//   const finalAmount = Number(amount) * 100;
-
-//   // 1️⃣ PhonePe payload (MATCHES PHP)
-//   const payload = {
-//     merchantId: process.env.PHONEPE_MERCHANT_ID,
-//     merchantTransactionId,
-//     merchantUserId: MUID,
-//     amount: finalAmount,
-//     mobileNumber: number,
-//     redirectUrl: `${process.env.PHONEPE_REDIRECT_URL}/${merchantTransactionId}`,
-//     redirectMode: "POST",
-//     paymentInstrument: {
-//       type: "PAY_PAGE"
-//     }
-//   };
-
-//   // 2️⃣ Base64 encode
-//   const payloadBase64 = Buffer
-//     .from(JSON.stringify(payload))
-//     .toString("base64");
-
-//   // 3️⃣ Checksum (VERY IMPORTANT)
-//   const stringToHash =
-//     payloadBase64 +
-//     "/pg/v1/pay" +
-//     process.env.PHONEPE_SALT_KEY;
-
-//   const checksum =
-//     crypto.createHash("sha256")
-//       .update(stringToHash)
-//       .digest("hex") +
-//     "###" +
-//     process.env.PHONEPE_SALT_INDEX;
-
-//   // 4️⃣ Call PhonePe PROD API
-//   const phonePeResponse = await axios.post(
-//     `${process.env.PHONEPE_BASE_URL}/pg/v1/pay`,
-//     { request: payloadBase64 },
-//     {
-//       headers: {
-//         "Content-Type": "application/json",
-//         "X-VERIFY": checksum
-//       }
-//     }
-//   );
-
-//   // 5️⃣ Return redirect URL
-//   return res.json({
-//     success: true,
-//     transactionId: merchantTransactionId,
-//     redirectUrl:
-//       phonePeResponse.data?.data?.instrumentResponse?.redirectInfo?.url
-//   });
-// }));
-
-// const MERCHANT_ID = "M23NICKDCRP5X";
-// const SALT_KEY = "N2EwNmI0N2ItMGJmMi00Mjg4LTkzYTUtNDdjMWU4OWNlMWI0";
-// const KEY_INDEX = 1;
-
-// r.post("/create", ah(async (req, res) => {
-//   try {
-//     const { MUID=1123, amount=1, number=7976929440 } = req.body;
-
-//     if (!MUID || !amount || !number) {
-//       return res.status(400).json({ message: "Invalid request data" });
-//     }
-
-//     const merchantTransactionId = "M" + Date.now();
-
-//     // Prepare payload (same as PHP)
-//     const payload = {
-//       merchantId: MERCHANT_ID,
-//       merchantTransactionId,
-//       merchantUserId: MUID,
-//       amount: amount * 100,
-//       redirectUrl: `https://indiadealsonlinemedia.com/${merchantTransactionId}`,
-//       redirectMode: "POST",
-//       mobileNumber: number,
-//       paymentInstrument: {
-//         type: "PAY_PAGE",
-//       },
-//     };
-
-//     // Base64 encode
-//     const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString("base64");
-
-//     // Hashing logic (MUST MATCH PHP)
-//     const stringToHash = payloadBase64 + "/pg/v1/pay" + SALT_KEY;
-//     const sha256Hash = crypto.createHash("sha256").update(stringToHash).digest("hex");
-//     const checksum = sha256Hash + "###" + KEY_INDEX;
-
-//     // Send request to PhonePe
-//     const response = await axios.post(
-//       // "https://api.phonepe.com/apis/hermes/pg/v1/pay",
-//       "https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay",
-//       { request: payloadBase64 },
-//       {
-//         headers: {
-//           "Content-Type": "application/json",
-//           "X-VERIFY": checksum,
-//         },
-//       }
-//     );
-
-//     return res.json({
-//       message: "Order processed",
-//       response: response.data,
-//     });
-
-//   } catch (err) {
-//     console.error("Error:", err);
-//     return res.status(500).json({ message: "Internal server error", error: err.message });
-//   }
-// }));
 
 r.post('/webhook', ah(async (req, res) => {
   if (!validatePhonePeWebhookAuth(req)) {
