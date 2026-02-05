@@ -1,9 +1,6 @@
-
-
-
 import axios from 'axios'
 
-const sendSms = async ({ phone, sms, templateId }) => {
+const sendSms = async ({ to, newUserName, templateId }) => {
   try {
     const response = await axios.post(
       'https://www.fast2sms.com/dev/bulkV2',
@@ -11,9 +8,9 @@ const sendSms = async ({ phone, sms, templateId }) => {
         route: 'dlt',
         sender_id: 'CMBMPL',
         message: templateId,
-        variables_values: `${sms}|`,
+        variables_values: `${newUserName}|`,
         flash: 0,
-        numbers: phone.toString()
+        numbers: to.toString()
       },
       {
         headers: {

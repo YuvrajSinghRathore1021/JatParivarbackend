@@ -175,13 +175,23 @@ const fulfillPreSignupIfNeeded = async (pre) => {
         await sendSms({
           to: refUser.phone,
           newUserName: user.displayName || user.name || 'A new member',
-          templateId: 208469 
+          templateId: 208469
         })
       } catch (err) {
         console.error('Referral SMS failed:', err.message)
       }
     }
   }
+  // send thank you sms to user
+  // try {
+  //   await sendSms({
+  //     to: user.phone,
+  //     newUserName: user.displayName || user.name || 'A new member',
+  //     templateId: 208470
+  //   })
+  // } catch (err) {
+  //   console.error('Thank you SMS failed:', err.message)
+  // }
 
   return user
 }
@@ -242,13 +252,13 @@ r.post('/create', ah(async (req, res) => {
     if (!normalizedRef) {
       return res.status(400).json({ error: 'Referral code is required' })
     }
-  if (!isValidReferralCodeFormat(normalizedRef)) {
-    return res.status(400).json({ error: 'Invalid referral code format' })
-  }
-  const refExists = await User.exists({ referralCode: referralCodeRegex(normalizedRef) })
-  if (!refExists) {
-    return res.status(404).json({ error: 'Referral code not found' })
-  }
+    if (!isValidReferralCodeFormat(normalizedRef)) {
+      return res.status(400).json({ error: 'Invalid referral code format' })
+    }
+    const refExists = await User.exists({ referralCode: referralCodeRegex(normalizedRef) })
+    if (!refExists) {
+      return res.status(404).json({ error: 'Referral code not found' })
+    }
 
     const validation = validatePreSignupPayload(body)
     if (!validation.ok) {
@@ -407,8 +417,8 @@ r.post('/webhook', ah(async (req, res) => {
     v2State === 'COMPLETED' || v2Event === 'checkout.order.completed' || v1 === 'PAYMENT_SUCCESS'
       ? 'success'
       : (v2State === 'FAILED' || v2Event === 'checkout.order.failed' || ['PAYMENT_FAILED', 'PAYMENT_ERROR', 'PAYMENT_DECLINED'].includes(v1))
-          ? 'failed'
-          : 'pending'
+        ? 'failed'
+        : 'pending'
 
   const pay = await Payment.findOneAndUpdate(
     { merchantTransactionId: merchantRef },
