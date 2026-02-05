@@ -13,7 +13,7 @@ r.post('/start', ah(async (req, res) => {
   const { phone, type = "otp" } = req.body
 
  
-  let templateId = 208010;
+  let templateId = 208576;
   if (type == "forgot") {
     templateId = 208418;
     const userExists = await User.exists({ phone })

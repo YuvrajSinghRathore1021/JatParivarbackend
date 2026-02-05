@@ -183,15 +183,15 @@ const fulfillPreSignupIfNeeded = async (pre) => {
     }
   }
   // send thank you sms to user
-  // try {
-  //   await sendSms({
-  //     to: user.phone,
-  //     newUserName: user.displayName || user.name || 'A new member',
-  //     templateId: 208470
-  //   })
-  // } catch (err) {
-  //   console.error('Thank you SMS failed:', err.message)
-  // }
+  try {
+    await sendSms({
+      to: user.phone,
+      newUserName: user.displayName || user.name || 'A new member',
+      templateId: 208575
+    })
+  } catch (err) {
+    console.error('Thank you SMS failed:', err.message)
+  }
 
   return user
 }
