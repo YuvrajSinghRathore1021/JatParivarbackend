@@ -156,10 +156,11 @@ r.post('/login', ah(async (req, res) => {
   if (!u) return res.status(401).json({ error: 'Invalid' })
   const ok = await u.compare(password)
   if (!ok) return res.status(401).json({ error: 'Invalid' })
+  u.sessionVersion = (u.sessionVersion || 1) + 1
   if (!u.referralCode) {
     u.referralCode = await generateUniqueReferralCode(User)
-    await u.save()
   }
+  await u.save()
   const token = signFor(u)
   res.cookie('token', token, cookieOpts)
   res.json({ ok: true })
@@ -181,6 +182,14 @@ r.get('/me', ah(async (req, res) => {
   try {
     const dec = jwt.verify(token, CONFIG.JWT_SECRET)
     const u = await User.findById(dec.id).select('-passwordHash')
+    if (!u || dec.sessionVersion !== u.sessionVersion) {
+      res.clearCookie('token', {
+        path: '/',
+        sameSite: CONFIG.COOKIE_SAMESITE,
+        secure: CONFIG.COOKIE_SECURE
+      })
+      return res.json({ user: null })
+    }
     res.json({ user: u || null })
   } catch {
     res.json({ user: null })

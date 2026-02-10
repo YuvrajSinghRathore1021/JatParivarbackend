@@ -9,10 +9,37 @@ import { User } from '../models/User.js'
 import { Person } from '../models/Person.js'
 import { ensurePersonForUser, mapUserRoleToPersonRole } from '../utils/personSync.js'
 import { UPLOAD_DIR } from '../utils/uploadDir.js'
+import sendOtp from '../utils/sendOtp.js'
 
 const r = Router()
+const profileOtpChallenges = new Map()
+const profileOtpVerified = new Map()
+const PROFILE_OTP_TTL_MS = 5 * 60 * 1000
+const PROFILE_OTP_VERIFIED_TTL_MS = 10 * 60 * 1000
+const PROFILE_OTP_REQUIRED_ERROR = 'OTP verification required before profile update'
 
 const isLocalUpload = (url) => typeof url === 'string' && url.startsWith('/uploads/')
+const profileOtpKey = (user) => String(user?._id || user?.id || '')
+
+const requireVerifiedProfileOtp = (req, res) => {
+  const key = profileOtpKey(req.user)
+  const record = profileOtpVerified.get(key)
+  if (!record) {
+    res.status(403).json({ error: PROFILE_OTP_REQUIRED_ERROR })
+    return false
+  }
+  if (Date.now() > record.expiresAt) {
+    profileOtpVerified.delete(key)
+    res.status(403).json({ error: PROFILE_OTP_REQUIRED_ERROR })
+    return false
+  }
+  return true
+}
+
+const consumeVerifiedProfileOtp = (req) => {
+  const key = profileOtpKey(req.user)
+  profileOtpVerified.delete(key)
+}
 
 const deleteLocalUpload = async (url) => {
   if (!isLocalUpload(url)) return
@@ -26,6 +53,65 @@ const deleteLocalUpload = async (url) => {
     }
   }
 }
+
+r.post(
+  '/profile/otp/start',
+  auth,
+  ah(async (req, res) => {
+    const key = profileOtpKey(req.user)
+    const phone = req.user?.phone
+    if (!phone) {
+      return res.status(400).json({ error: 'Phone is required' })
+    }
+    const code = String(Math.floor(100000 + Math.random() * 900000))
+    profileOtpChallenges.set(key, {
+      code,
+      expiresAt: Date.now() + PROFILE_OTP_TTL_MS
+    })
+    profileOtpVerified.delete(key)
+    const result = await sendOtp({
+      phone,
+      otp: code,
+      templateId: '208576'
+    })
+    if (!result.success) {
+      return res.status(500).json({
+        error: 'OTP sending failed',
+        details: result.error
+      })
+    }
+    res.json({ ok: true })
+  })
+)
+
+r.post(
+  '/profile/otp/verify',
+  auth,
+  ah(async (req, res) => {
+    const { code } = req.body || {}
+    const normalizedCode = String(code || '').trim()
+    if (!/^\d{6}$/.test(normalizedCode)) {
+      return res.status(400).json({ error: 'Invalid OTP' })
+    }
+    const key = profileOtpKey(req.user)
+    const record = profileOtpChallenges.get(key)
+    if (!record) {
+      return res.status(400).json({ error: 'OTP not found' })
+    }
+    if (Date.now() > record.expiresAt) {
+      profileOtpChallenges.delete(key)
+      return res.status(400).json({ error: 'OTP expired' })
+    }
+    if (record.code !== normalizedCode) {
+      return res.status(400).json({ error: 'Invalid OTP' })
+    }
+    profileOtpChallenges.delete(key)
+    profileOtpVerified.set(key, {
+      expiresAt: Date.now() + PROFILE_OTP_VERIFIED_TTL_MS
+    })
+    res.json({ ok: true })
+  })
+)
 
 r.get(
   '/profile',
@@ -43,6 +129,7 @@ r.put(
   '/profile',
   auth,
   ah(async (req, res) => {
+    if (!requireVerifiedProfileOtp(req, res)) return
     const body = req.body || {}
     const user = await User.findById(req.user._id)
     if (!user) return res.status(404).json({ error: 'User not found' })
@@ -143,6 +230,7 @@ r.put(
       'name displayName email phone avatarUrl publicNote occupation designation department education gender maritalStatus occupationAddress parentalAddress currentAddress gotra contactEmail alternatePhone referralCode planTitle planAmount role education designation department janAadhaarUrl dateOfBirth status'
     )
     const nextPerson = await Person.findOne({ userId: req.user._id })
+    consumeVerifiedProfileOtp(req)
     res.json({ user: nextUser, person: nextPerson })
   })
 )
@@ -151,6 +239,7 @@ r.put(
   '/profile/avatar',
   auth,
   ah(async (req, res) => {
+    if (!requireVerifiedProfileOtp(req, res)) return
     const { avatarUrl } = req.body || {}
     if (avatarUrl !== '' && typeof avatarUrl !== 'string') {
       return res.status(400).json({ error: 'avatarUrl must be a string' })
@@ -179,6 +268,7 @@ r.put(
       await deleteLocalUpload(previous)
     }
 
+    consumeVerifiedProfileOtp(req)
     res.json({
       avatarUrl: user.avatarUrl,
       displayName: user.displayName,
@@ -195,6 +285,7 @@ r.put(
   '/profile/password',
   auth,
   ah(async (req, res) => {
+    if (!requireVerifiedProfileOtp(req, res)) return
     const { currentPassword, newPassword } = req.body || {}
     if (!newPassword || newPassword.length < 6) {
       return res.status(400).json({ error: 'New password must be at least 6 characters' })
@@ -215,6 +306,7 @@ r.put(
     user.sessionVersion = (user.sessionVersion || 1) + 1
     await user.save()
 
+    consumeVerifiedProfileOtp(req)
     res.json({ ok: true })
   })
 )
