@@ -72,7 +72,8 @@ r.post(
     const result = await sendOtp({
       phone,
       otp: code,
-      templateId: '208576'
+      // templateId: '208576'
+      templateId: '209216'
     })
     if (!result.success) {
       return res.status(500).json({
