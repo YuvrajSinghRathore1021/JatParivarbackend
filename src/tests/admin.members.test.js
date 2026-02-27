@@ -181,3 +181,26 @@ test('search by referral code returns users who used it (referredBy)', async () 
   const names = (res.body?.data || []).map((u) => u.name)
   assert.ok(names.includes('Referred User'))
 })
+
+test('admin can toggle showPhoneOnPublic for a member', async () => {
+  const user = await User.create({
+    name: 'User Visibility',
+    displayName: 'User Visibility',
+    phone: '9000000013',
+    passwordHash: 'x',
+    role: 'sadharan',
+    status: 'active',
+    showPhoneOnPublic: false,
+  })
+
+  const res = await request(app)
+    .patch(`/api/v1/admin/members/${user._id}`)
+    .set('Authorization', `Bearer ${token}`)
+    .send({ showPhoneOnPublic: true })
+    .expect(200)
+
+  assert.equal(res.body?.member?.showPhoneOnPublic, true)
+
+  const updated = await User.findById(user._id).lean()
+  assert.equal(updated?.showPhoneOnPublic, true)
+})

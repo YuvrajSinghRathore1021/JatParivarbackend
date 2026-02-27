@@ -15,6 +15,7 @@ const auditLogSchema = new mongoose.Schema({
 
 auditLogSchema.index({ entityType: 1, entityId: 1, createdAt: -1 })
 auditLogSchema.index({ actorAdminId: 1, createdAt: -1 })
+auditLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 15 })
 
 auditLogSchema.statics.record = async function ({ actorAdminId, actorUserId, entityType, entityId, action, summary, before, after, metadata }) {
   return this.create({ actorAdminId, actorUserId, entityType, entityId, action, summary, before, after, metadata })

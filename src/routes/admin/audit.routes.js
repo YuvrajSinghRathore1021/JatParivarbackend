@@ -26,4 +26,14 @@ router.get('/', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN', 'FINANCE_ADMIN'), ah
   })
 }))
 
+router.delete('/', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN', 'FINANCE_ADMIN'), ah(async (_req, res) => {
+  const result = await AuditLog.deleteMany({})
+  res.json({ ok: true, deletedCount: result.deletedCount || 0 })
+}))
+
+router.post('/delete-all', requireRole('SUPER_ADMIN', 'CONTENT_ADMIN', 'FINANCE_ADMIN'), ah(async (_req, res) => {
+  const result = await AuditLog.deleteMany({})
+  res.json({ ok: true, deletedCount: result.deletedCount || 0 })
+}))
+
 export default router

@@ -75,6 +75,7 @@ const userSchema = new mongoose.Schema({
   gotra: gotraSchema,
   contactEmail: String,
   alternatePhone: String,
+  showPhoneOnPublic: { type: Boolean, default: false },
   education: String,
     department: String,
     designation: String,

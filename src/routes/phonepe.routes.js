@@ -143,6 +143,7 @@ const fulfillPreSignupIfNeeded = async (pre) => {
         nani: preGotra.nani
       },
       contactEmail: preForm.email,
+      showPhoneOnPublic: preForm.showPhoneOnPublic === true,
       profession: preForm.occupation,
       maritalStatus: preForm.maritalStatus,
       planId: planDoc?._id,

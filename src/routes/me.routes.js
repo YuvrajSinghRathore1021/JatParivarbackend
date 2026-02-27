@@ -119,7 +119,7 @@ r.get(
   auth,
   ah(async (req, res) => {
     const user = await User.findById(req.user._id).select(
-      'name displayName email phone avatarUrl publicNote occupation designation department education gender maritalStatus occupationAddress parentalAddress currentAddress gotra contactEmail alternatePhone referralCode planTitle planAmount role education janAadhaarUrl dateOfBirth status'
+      'name displayName email phone avatarUrl publicNote occupation designation department education gender maritalStatus occupationAddress parentalAddress currentAddress gotra contactEmail alternatePhone showPhoneOnPublic referralCode planTitle planAmount role education janAadhaarUrl dateOfBirth status'
     )
     const person = await Person.findOne({ userId: req.user._id })
     res.json({ user, person })
@@ -145,6 +145,7 @@ r.put(
     if (body.publicNote !== undefined) user.publicNote = body.publicNote
     if (body.contactEmail !== undefined) user.contactEmail = body.contactEmail
     if (body.alternatePhone !== undefined) user.alternatePhone = body.alternatePhone
+    if (body.showPhoneOnPublic !== undefined) user.showPhoneOnPublic = Boolean(body.showPhoneOnPublic)
     if (body.gender !== undefined) user.gender = body.gender
     if (body.maritalStatus !== undefined) user.maritalStatus = body.maritalStatus
     if (body.avatarUrl !== undefined) user.avatarUrl = body.avatarUrl
@@ -160,6 +161,16 @@ r.put(
     if (body.occupationAddress !== undefined) user.occupationAddress = sanitizeAddress(body.occupationAddress)
     if (body.parentalAddress !== undefined) user.parentalAddress = sanitizeAddress(body.parentalAddress)
     if (body.currentAddress !== undefined) user.currentAddress = sanitizeAddress(body.currentAddress)
+    if (body.newPassword !== undefined) {
+      const nextPassword = String(body.newPassword || '').trim()
+      if (nextPassword) {
+        if (nextPassword.length < 6) {
+          return res.status(400).json({ error: 'New password must be at least 6 characters' })
+        }
+        user.passwordHash = await bcrypt.hash(nextPassword, 10)
+        user.sessionVersion = (user.sessionVersion || 1) + 1
+      }
+    }
 
 
     if (body.dateOfBirth !== undefined) {
@@ -228,7 +239,7 @@ r.put(
     }
 
     const nextUser = await User.findById(req.user._id).select(
-      'name displayName email phone avatarUrl publicNote occupation designation department education gender maritalStatus occupationAddress parentalAddress currentAddress gotra contactEmail alternatePhone referralCode planTitle planAmount role education designation department janAadhaarUrl dateOfBirth status'
+      'name displayName email phone avatarUrl publicNote occupation designation department education gender maritalStatus occupationAddress parentalAddress currentAddress gotra contactEmail alternatePhone showPhoneOnPublic referralCode planTitle planAmount role education designation department janAadhaarUrl dateOfBirth status'
     )
     const nextPerson = await Person.findOne({ userId: req.user._id })
     consumeVerifiedProfileOtp(req)
@@ -240,7 +251,6 @@ r.put(
   '/profile/avatar',
   auth,
   ah(async (req, res) => {
-    if (!requireVerifiedProfileOtp(req, res)) return
     const { avatarUrl } = req.body || {}
     if (avatarUrl !== '' && typeof avatarUrl !== 'string') {
       return res.status(400).json({ error: 'avatarUrl must be a string' })
@@ -269,7 +279,6 @@ r.put(
       await deleteLocalUpload(previous)
     }
 
-    consumeVerifiedProfileOtp(req)
     res.json({
       avatarUrl: user.avatarUrl,
       displayName: user.displayName,
@@ -287,21 +296,13 @@ r.put(
   auth,
   ah(async (req, res) => {
     if (!requireVerifiedProfileOtp(req, res)) return
-    const { currentPassword, newPassword } = req.body || {}
+    const { newPassword } = req.body || {}
     if (!newPassword || newPassword.length < 6) {
       return res.status(400).json({ error: 'New password must be at least 6 characters' })
-    }
-    if (!currentPassword) {
-      return res.status(400).json({ error: 'Current password is required' })
     }
 
     const user = await User.findById(req.user._id).select('passwordHash sessionVersion')
     if (!user) return res.status(404).json({ error: 'User not found' })
-
-    const ok = await bcrypt.compare(currentPassword, user.passwordHash)
-    if (!ok) {
-      return res.status(400).json({ error: 'Current password is incorrect' })
-    }
 
     user.passwordHash = await bcrypt.hash(newPassword, 10)
     user.sessionVersion = (user.sessionVersion || 1) + 1

@@ -121,6 +121,7 @@ r.post('/register', ah(async (req, res) => {
       nani: gotra.nani
     },
     contactEmail: form.email,
+    showPhoneOnPublic: form.showPhoneOnPublic === true,
     profession: form.occupation,
     maritalStatus: form.maritalStatus,
     planId: planDoc?._id,

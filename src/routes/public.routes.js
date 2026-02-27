@@ -15,7 +15,7 @@ import { gauravs } from "../models/GauravPerson.js";
 
 const r = Router()
 
-const PERSON_USER_FIELDS = 'displayName name avatarUrl occupation designation department education publicNote contactEmail phone alternatePhone address planTitle planAmount role status referralCode bussinessurl adimage message currentAddress parentalAddress occupationAddress'
+const PERSON_USER_FIELDS = 'displayName name avatarUrl occupation designation department education publicNote contactEmail phone alternatePhone showPhoneOnPublic address planTitle planAmount role status referralCode bussinessurl adimage message currentAddress parentalAddress occupationAddress'
 const ensureRosterForRole = async (personRole) => {
   const normalized = personRole === 'management' ? 'management' : 'founder'
   const userRole = normalized === 'management' ? 'management' : 'founder'
@@ -45,6 +45,7 @@ const readSetting = async (key, fallback) => {
 const serializePublicPerson = (doc) => {
   if (!doc) return null
   const user = doc.userId || doc.user || null
+  const effectiveShowPhone = user ? user.showPhoneOnPublic !== false : false
   return {
     id: doc._id,
     role: doc.role,
@@ -81,8 +82,9 @@ const serializePublicPerson = (doc) => {
         department: user?.department,
         publicNote: user.publicNote,
         contactEmail: user.contactEmail,
-        phone: user.phone,
-        alternatePhone: user.alternatePhone,
+        phone: effectiveShowPhone ? user.phone : null,
+        alternatePhone: effectiveShowPhone ? user.alternatePhone : null,
+        showPhoneOnPublic: user.showPhoneOnPublic,
         address: user.address,
         role: user.role,
         planTitle: user.planTitle,

@@ -10,6 +10,39 @@ dotenv.config({ path: '.env.local', override: true })
 const list = (v, fallback) =>
   (v || fallback).split(',').map(s => s.trim()).filter(Boolean)
 
+const normalizeOrigin = (origin) => {
+  const raw = String(origin || '').trim()
+  if (!raw) return ''
+  try {
+    const parsed = new URL(raw)
+    return `${parsed.protocol}//${parsed.host}`.toLowerCase()
+  } catch {
+    return raw.replace(/\/+$/, '').toLowerCase()
+  }
+}
+
+const isIpHost = (hostname = '') =>
+  /^\d{1,3}(\.\d{1,3}){3}$/.test(hostname) || hostname.includes(':')
+
+const expandApexAndWww = (origins = []) => {
+  const out = new Set()
+  for (const origin of origins) {
+    const normalized = normalizeOrigin(origin)
+    if (!normalized) continue
+    out.add(normalized)
+    try {
+      const url = new URL(normalized)
+      const host = url.hostname.toLowerCase()
+      if (host === 'localhost' || isIpHost(host)) continue
+      const bare = host.startsWith('www.') ? host.slice(4) : host
+      out.add(`${url.protocol}//${bare}${url.port ? `:${url.port}` : ''}`)
+      out.add(`${url.protocol}//www.${bare}${url.port ? `:${url.port}` : ''}`)
+    } catch {
+    }
+  }
+  return Array.from(out)
+}
+
 const inferPhonePeEnv = () => {
   const explicit = process.env.PHONEPE_ENV
   if (explicit) return String(explicit).toUpperCase()
@@ -37,7 +70,12 @@ export const CONFIG = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: parseInt(process.env.PORT || '8000', 10),
   BASE_URL: process.env.PUBLIC_BASE_URL || `http://localhost:${process.env.PORT || 8000}`,
-  FRONTEND_URLS: list(process.env.CORS_ORIGINS || process.env.CORS_ORIGIN, 'http://localhost:5173,http://localhost:4173,https://jatparivar.org,https://www.jatparivar.org'),
+  FRONTEND_URLS: expandApexAndWww(
+    list(
+      process.env.CORS_ORIGINS || process.env.CORS_ORIGIN,
+      'http://localhost:5173,http://localhost:4173,https://jatparivar.org,https://www.jatparivar.org'
+    )
+  ),
   API_PREFIX: process.env.API_PREFIX || '/api/v1',
 
   COOKIE_SECURE: (process.env.COOKIE_SECURE || 'false') === 'true',

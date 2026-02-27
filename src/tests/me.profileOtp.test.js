@@ -88,13 +88,15 @@ test('OTP start + verify + profile save succeeds', async () => {
   const updateRes = await request(app)
     .put('/api/v1/me/profile')
     .set('Cookie', authCookie)
-    .send({ name: 'Changed Name' })
+    .send({ name: 'Changed Name', showPhoneOnPublic: true })
     .expect(200)
 
   assert.equal(updateRes.body?.user?.name, 'Changed Name')
+  assert.equal(updateRes.body?.user?.showPhoneOnPublic, true)
 
   const updated = await User.findById(user._id).lean()
   assert.equal(updated?.name, 'Changed Name')
+  assert.equal(updated?.showPhoneOnPublic, true)
 })
 
 test('OTP is consumed after one successful profile save', async () => {
@@ -127,7 +129,7 @@ test('password update without OTP returns 403', async () => {
   const res = await request(app)
     .put('/api/v1/me/profile/password')
     .set('Cookie', authCookie)
-    .send({ currentPassword: 'Password@1', newPassword: 'Password@2' })
+    .send({ newPassword: 'Password@2' })
     .expect(403)
 
   assert.equal(res.body?.error, 'OTP verification required before profile update')
@@ -149,7 +151,7 @@ test('OTP start + verify + password update succeeds', async () => {
   const updateRes = await request(app)
     .put('/api/v1/me/profile/password')
     .set('Cookie', authCookie)
-    .send({ currentPassword: 'Password@1', newPassword: 'Password@2' })
+    .send({ newPassword: 'Password@2' })
     .expect(200)
 
   assert.equal(updateRes.body?.ok, true)
@@ -159,14 +161,42 @@ test('OTP start + verify + password update succeeds', async () => {
   assert.equal(matched, true)
 })
 
-test('avatar update without OTP returns 403', async () => {
+test('avatar update without OTP succeeds', async () => {
   const res = await request(app)
     .put('/api/v1/me/profile/avatar')
     .set('Cookie', authCookie)
     .send({ avatarUrl: '/uploads/new-avatar.png' })
-    .expect(403)
+    .expect(200)
 
-  assert.equal(res.body?.error, 'OTP verification required before profile update')
+  assert.equal(res.body?.avatarUrl, '/uploads/new-avatar.png')
+  const updated = await User.findById(user._id).select('avatarUrl').lean()
+  assert.equal(updated?.avatarUrl, '/uploads/new-avatar.png')
+})
+
+test('OTP start + verify + profile save can update password without current password', async () => {
+  await request(app)
+    .post('/api/v1/me/profile/otp/start')
+    .set('Cookie', authCookie)
+    .send({})
+    .expect(200)
+
+  await request(app)
+    .post('/api/v1/me/profile/otp/verify')
+    .set('Cookie', authCookie)
+    .send({ code: lastOtpCode })
+    .expect(200)
+
+  const updateRes = await request(app)
+    .put('/api/v1/me/profile')
+    .set('Cookie', authCookie)
+    .send({ displayName: 'With New Password', newPassword: 'Password@3' })
+    .expect(200)
+
+  assert.equal(updateRes.body?.user?.displayName, 'With New Password')
+  const updated = await User.findById(user._id).select('passwordHash displayName').lean()
+  const matched = await bcrypt.compare('Password@3', updated.passwordHash)
+  assert.equal(matched, true)
+  assert.equal(updated?.displayName, 'With New Password')
 })
 
 test('OTP verification fails on invalid code', async () => {

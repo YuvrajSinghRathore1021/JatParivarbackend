@@ -27,6 +27,19 @@ ensureUploadDir()
 const app = express()
 app.set('trust proxy', 1)
 
+const normalizeOrigin = (origin) => {
+  const raw = String(origin || '').trim()
+  if (!raw) return ''
+  try {
+    const parsed = new URL(raw)
+    return `${parsed.protocol}//${parsed.host}`.toLowerCase()
+  } catch {
+    return raw.replace(/\/+$/, '').toLowerCase()
+  }
+}
+
+const allowedOrigins = new Set(CONFIG.FRONTEND_URLS.map(normalizeOrigin).filter(Boolean))
+
 // app.use(helmet())
 app.use(
   helmet({
@@ -38,7 +51,7 @@ const corsOptions = {
   origin: (origin, cb) => {
     // Allow non-browser requests (curl, server-to-server, etc.)
     if (!origin) return cb(null, true)
-    if (CONFIG.FRONTEND_URLS.includes(origin)) return cb(null, true)
+    if (allowedOrigins.has(normalizeOrigin(origin))) return cb(null, true)
     return cb(new Error(`Not allowed by CORS: ${origin}`))
   },
   credentials: true,
